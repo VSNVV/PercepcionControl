@@ -23,4 +23,6 @@ end
 plot(listaIteraciones, listaDistancias);
 xlabel('Tiempo');
 ylabel('Distancia');
+
+rosshutdown;
     
