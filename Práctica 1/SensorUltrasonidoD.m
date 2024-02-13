@@ -9,5 +9,23 @@ listaDistancias = [];
 listaDistaniciasFiltradas = [];
 listaIteraciones = [];
 
+for i = 0:1000
+    
+    mensajeSonar(sonar3, 1);
+    distanciaActual = mensajeSonar.Range_;
+
+    listaDistancias = [listaDistancias, distanciaActual];
+
+    if(length(listaDistancias) == 5)
+        distanciaFiltrada = mean(listaDistancias(end-4:end));
+        listaDistaniciasFiltradas = [listaDistaniciasFiltradas, distanciaFiltrada];
+    else
+        listaDistanciasFiltradas = [listaDistanciasFiltradas, distanciaActual];
+    end
+
+    listaIteraciones = [listaIteraciones, i];
+end
+
+
 
 
