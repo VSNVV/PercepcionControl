@@ -5,8 +5,6 @@ rosinit;
 
 sonar3 = rossubscriber('/robot0/sonar_3');
 
-publisher = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist');
-
 listaDistancias = [];
 
 listaIteraciones = [];
