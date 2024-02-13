@@ -6,26 +6,30 @@ rosinit;
 sonar3 = rossubscriber('/robot0/sonar_3');
 
 listaDistancias = [];
-listaDistaniciasFiltradas = [];
+listaDistanciasFiltradas = [];
 listaIteraciones = [];
 
 for i = 0:1000
     
-    mensajeSonar(sonar3, 1);
+    mensajeSonar = receive(sonar3, 1);
     distanciaActual = mensajeSonar.Range_;
 
     listaDistancias = [listaDistancias, distanciaActual];
 
     if(length(listaDistancias) == 5)
         distanciaFiltrada = mean(listaDistancias(end-4:end));
-        listaDistaniciasFiltradas = [listaDistaniciasFiltradas, distanciaFiltrada];
+        listaDistanciasFiltradas = [listaDistanciasFiltradas, distanciaFiltrada];
     else
         listaDistanciasFiltradas = [listaDistanciasFiltradas, distanciaActual];
     end
 
     listaIteraciones = [listaIteraciones, i];
+
+    disp(i);
 end
 
+plot(listaIteraciones, listaDistanciasFiltradas);
+xlabel('Tiempo');
+ylabel('Distancia Filtrada');
 
-
-
+rosshutdown;
