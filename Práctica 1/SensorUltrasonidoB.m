@@ -1,5 +1,5 @@
-setenv('ROS_MASTER_URI','http://192.168.1.166:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://172.22.68.96:11311') % IP de la MV
+setenv('ROS_IP','172.22.9.177') % IP de nuestro ordenador
 
 rosinit;
 
@@ -20,20 +20,22 @@ mensajeMovimiento.Angular.Z = 0.0;
 mensajeSonar = receive(sonar3, 3);
 distanciaActual = mensajeSonar.Range_;
 
-while(distanciaActual ~= 2)
+distanciaObjetivo = 2;
 
-    mensajeSonar = receive(sonar3, 3);
+while(distanciaActual ~= distanciaObjetivo)
+
+    mensajeSonar = receive(sonar3, 1);
     distanciaActual = mensajeSonar.Range_;
 
-    if(distanciaActual > 2)
+    if(distanciaActual > distanciaObjetivo)
         mensajeMovimiento.Linear.X = 0.1;
     end
 
-    if(distanciaActual < 2)
+    if(distanciaActual < distanciaObjetivo)
         mensajeMovimiento.Linear.X = -0.1;
     end
 
-    if(distanciaActual == 2)
+    if(distanciaActual == distanciaObjetivo)
         mensajeMovimiento.Linear.X = 0.0;
     end
     
