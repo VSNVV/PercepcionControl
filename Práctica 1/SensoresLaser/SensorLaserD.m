@@ -14,4 +14,6 @@ listaIteraciones = [];
 for i = 0:1000
     mensajeLaser = receive(laser, 1);
     distanciasLaser = mensajeLaser.Ranges;
+
+    listaDistancias = 
     
