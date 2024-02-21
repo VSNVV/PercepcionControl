@@ -61,19 +61,6 @@ end
 
 analizarRectas(rectaFrontal, rectaIzquierda, rectaTrasera, rectaDerecha);
 
-
-
-
-
-%disp(calcularGradoParalelismo(rectaIzquierda,rectaDerecha));
-%disp(calcularGradoParalelismo(rectaTrasera,rectaFrontal));
-%disp(calcularAnguloEntreRectas(rectaFrontal,rectaIzquierda));
-
-%disp(rectaFrontal);
-%disp(rectaIzquierda);
-%disp(rectaDerecha);
-%disp(rectaTrasera);
-
 rosshutdown;
 
 function punto = calcularPunto(distancia, angulo)
