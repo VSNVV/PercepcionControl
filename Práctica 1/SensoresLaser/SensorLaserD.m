@@ -1,6 +1,11 @@
 %% CONEXION A ROS
-setenv('ROS_MASTER_URI','http://192.168.1.166:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
+
+setenv('ROS_MASTER_URI','http://172.29.29.59:11311') % IP de la MV
+setenv('ROS_IP','172.29.29.55') % IP de nuestro ordenador
+
+rosshutdown;
+
+rosinit;
 
 %% SUBSCRIPCION AL LASER
 laser = rossubscriber('/robot0/laser_1');
@@ -10,10 +15,29 @@ laser = rossubscriber('/robot0/laser_1');
 listaDistancias = [];
 listaDistanciasFiltradas = [];
 listaIteraciones = [];
+contador = 0;
 
 for i = 0:1000
     mensajeLaser = receive(laser, 1);
-    distanciasLaser = mensajeLaser.Ranges;
+    distanciaLaser = mensajeLaser.Ranges(200);
 
-    listaDistancias = 
+    listaDistancias = [listaDistancias, distanciaLaser];
+
+    if(length(listaDistancias) == 5)
+        distanciaMedia = mean(listaDistancias);
+        listaDistanciasFiltradas = [listaDistanciasFiltradas, distanciaMedia];
+
+        listaDistancias = [];
+
+        listaIteraciones = [listaIteraciones, contador];
+        contador = contador + 1;
+    end
+
     
+
+    disp(i);
+end
+
+plot(listaIteraciones, listaDistanciasFiltradas);
+xlabel('Tiempo');
+ylabel('Distancia Filtrada');
