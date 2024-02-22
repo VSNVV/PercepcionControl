@@ -1,75 +1,37 @@
 %setenv('ROS_MASTER_URI','http://192.168.1.166:11311') % IP de la MV
 %setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
 rosshutdown;
-%setenv('ROS_MASTER_URI','http://172.29.30.178:11311') % IP de la MV
 setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
 setenv('ROS_IP','172.31.176.1') % IP de nuestro ordenador
 rosinit;
 
 Recta = struct('pendiente', 0, 'interseccion', 0);
 Punto = struct('ejeX', 0,'ejeY',0);
-RadioRobot=0.15;
-
-sonarFrontalIzquierdo = rossubscriber('/robot0/sonar_2');
-sonarFrontalDerecho = rossubscriber('/robot0/sonar_3');
-
-sonarLateralIzquierdo = rossubscriber('/robot0/sonar_0');
-sonarLateralDerecho = rossubscriber('/robot0/sonar_5');
-
-sonarTraseroIzquierdo = rossubscriber('/robot0/sonar_7');
-sonarTraseroDerecho = rossubscriber('/robot0/sonar_6');
-
-sonarDiagonalIzquierdo= rossubscriber('/robot0/sonar_1');
-sonarDiagonalDerecho= rossubscriber('/robot0/sonar_4');
-
-% sonarFrontalIzquierdo = rossubscriber('/sonar_2');
-% sonarFrontalDerecho = rossubscriber('/sonar_3');
-% 
-% sonarLateralIzquierdo = rossubscriber('/sonar_0');
-% sonarLateralDerecho = rossubscriber('/sonar_5');
-% 
-% sonarTraseroIzquierdo = rossubscriber('/sonar_7');
-% sonarTraseroDerecho = rossubscriber('/sonar_6');
-% 
-% sonarDiagonalIzquierdo= rossubscriber('/sonar_1');
-% sonarDiagonalDerecho= rossubscriber('/sonar_4');
 
 
-PuntoFrontalIzquierdo=calcularPunto(receive(sonarFrontalIzquierdo).Range_+RadioRobot,12);
-PuntoFrontalDerecho=calcularPunto(receive(sonarFrontalDerecho).Range_+RadioRobot,348);
+laser = rossubscriber('/robot0/laser_1');
+mensajeLaser = receive(laser, 1);
+listaDistanciasLaser = mensajeLaser.Ranges;
+distanciaFrontal = listaDistanciasLaser(100);
 
-PuntoLateralIzquierdo=calcularPunto(receive(sonarLateralIzquierdo).Range_+RadioRobot,90);
-PuntoDiagonalIzquierdo=calcularPunto(receive(sonarDiagonalIzquierdo).Range_+RadioRobot,44);
 
-PuntoTraseroIzquierdo=calcularPunto(receive(sonarTraseroIzquierdo).Range_+RadioRobot,144);
-PuntoTraseroDerecho=calcularPunto(receive(sonarTraseroDerecho).Range_+RadioRobot,216);
 
-PuntoLateralDerecho=calcularPunto(receive(sonarLateralDerecho).Range_+RadioRobot,270);
-PuntoDiagonalDerecho=calcularPunto(receive(sonarDiagonalDerecho).Range_+RadioRobot,316);
+PuntoFrontalIzquierdo=calcularPunto(listaDistanciasLaser(225),posicionAngulo(225));
+PuntoFrontalDerecho=calcularPunto(listaDistanciasLaser(175),posicionAngulo(175));
+
+PuntoIzquierdoIzquierdo=calcularPunto(listaDistanciasLaser(325),posicionAngulo(325));
+PuntoIzquierdoDerecho=calcularPunto(listaDistanciasLaser(275),posicionAngulo(275));
+
+PuntoTraseroIzquierdo=calcularPunto(listaDistanciasLaser(25),posicionAngulo(25));
+PuntoTraseroDerecho=calcularPunto(listaDistanciasLaser(375),posicionAngulo(375)); 
+
+PuntoDerechoIzquierdo=calcularPunto(listaDistanciasLaser(125),posicionAngulo(125));
+PuntoDerechoDerecho=calcularPunto(listaDistanciasLaser(75),posicionAngulo(75));
 
 rectaFrontal= calcularRecta(PuntoFrontalIzquierdo,PuntoFrontalDerecho);
 rectaTrasera=calcularRecta(PuntoTraseroIzquierdo,PuntoTraseroDerecho);
-rectaIzquierdaDiagonal= calcularRecta(PuntoLateralIzquierdo,PuntoDiagonalIzquierdo);
-rectaDerechaDiagonal= calcularRecta(PuntoLateralDerecho,PuntoDiagonalDerecho);
-rectaIzquierdaEjeX= calcularRectaParalelaEjeX(PuntoLateralIzquierdo);
-rectaDerechaEjeX= calcularRectaParalelaEjeX(PuntoLateralDerecho);
-
-if isnan(rectaFrontal.pendiente)&& isnan(rectaTrasera.pendiente)
-
-    rectaDerecha=rectaDerechaEjeX;
-    rectaIzquierda=rectaIzquierdaEjeX;
-else 
-    if isnan(rectaFrontal.pendiente)
-        rectaDerecha=determinarRecta(rectaDerechaDiagonal,rectaDerechaEjeX,rectaTrasera);
-        rectaIzquierda=determinarRecta(rectaIzquierdaDiagonal,rectaIzquierdaEjeX,rectaTrasera);
-    else
-        rectaDerecha=determinarRecta(rectaDerechaDiagonal,rectaDerechaEjeX,rectaFrontal);
-        rectaIzquierda=determinarRecta(rectaIzquierdaDiagonal,rectaIzquierdaEjeX,rectaFrontal);
-    end
-end
-disp(PuntoFrontalDerecho);
-disp(PuntoFrontalIzquierdo);
-disp(rectaFrontal);
+rectaIzquierda= calcularRecta(PuntoIzquierdoIzquierdo,PuntoIzquierdoDerecho);
+rectaDerecha= calcularRecta(PuntoDerechoIzquierdo,PuntoDerechoDerecho);
 
 analizarRectas(rectaFrontal, rectaIzquierda, rectaTrasera, rectaDerecha);
 
@@ -101,40 +63,18 @@ function recta = calcularRecta(punto1, punto2)
     end
 end
 
-function recta = calcularRectaParalelaEjeX(punto)
-    if isnan(punto.ejeX)
-        recta.pendiente= NaN;
-        recta.interseccion =NaN;
-    else
-        recta.pendiente = 0;
-        recta.interseccion = punto.ejeY;
-    end
-end
-
 function gradoParalelismo = calcularGradoParalelismo(recta1, recta2)
 
     diferenciaPendientes = abs(recta1.pendiente - recta2.pendiente);
     gradoParalelismo = 100 - (diferenciaPendientes / (1 + abs(recta1.pendiente * recta2.pendiente))) * 100;
 end
 
-function recta = determinarRecta(rectaLateralDiagonal, rectaParalelaEjeX, rectaFrontalTrasera)
-    if isnan(rectaLateralDiagonal.pendiente)
-        recta = rectaParalelaEjeX;
-    else
-        anguloRectaLateralDiagonal = abs(calcularAnguloEntreRectas(rectaLateralDiagonal, rectaFrontalTrasera) - 90);       
-        anguloRectaParalelaEjeX = abs(calcularAnguloEntreRectas(rectaParalelaEjeX, rectaFrontalTrasera) - 90);
-        
-        if anguloRectaLateralDiagonal <= anguloRectaParalelaEjeX
-            recta = rectaLateralDiagonal;
-        else
-            recta = rectaParalelaEjeX;
-        end
-    end
-end
-
 function anguloGrados = calcularAnguloEntreRectas(recta1, recta2)
     anguloRadianes = atan((recta2.pendiente - recta1.pendiente) / (1 + recta1.pendiente * recta2.pendiente));
     anguloGrados = abs(rad2deg(anguloRadianes));
+end
+function grados = posicionAngulo(posicion)
+    grados= mod((posicion*360/400)+180,360);
 end
 
 function analizarRectas(rectaFrontal, rectaIzquierda, rectaTrasera, rectaDerecha)
