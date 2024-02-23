@@ -33,8 +33,10 @@ pause(1); % Pausamos para asegurarnos de que llega un mensaje
 while(strcmp(odometria.LatestMessage.ChildFrameId,'base_link') ~= 1)
     odometria.LatestMessage
 end
+
 %% INICIALIZAMOS LA PRIMERA POSICION
-posicionInicial = odometria.LatestMessage.Pose.Pose.Position;
+posicionInicial = odometria.LatestMessage.Pose.Pose.Orientation;
+qpos = [pos.W, pos.X, pos.Y, pos.Z];
 
 %% ALGORITMO
 listaDistancias = [];
@@ -46,17 +48,21 @@ send(activaPublisher, mensajeActivarMotor);
 send(publisher, mensajeMovimiento);
 
 for i = 1:60
-    posicionActual = odometria.LatestMessage.Pose.Pose.Position;
+    posicionActual = odom.LatestMessage.Pose.Pose.Orientation;
+    posicionAngular = [posicionActual.W, posicionActual.X, posicionActual.Y, posicionActual.Z];
 
-    distanciaRecorrida = sqrt((posicionInicial.X - posicionActual.X)^2 + (posicionInicial.Y - posicionActual.Y)^2);
-    listaDistancias = [listaDistancias, distanciaRecorrida];
-    
+    [yaw, pitch, roll] = quat2angle(posicionAngular, 'ZYX');
+    disp(['Roll (radianes): ', num2str(roll)]);
+    disp(['Pitch (radianes): ', num2str(pitch)]);
+    disp(['Yaw (radianes): ', num2str(yaw)]);
+
+    listaDistancias = [listaDistancias, yaw];
     disp(listaDistancias);
     
     waitfor(rate);
 end
 
-mensajeMovimiento.Linear.X = 0;
+mensajeMovimiento.Angular.Z = 0.0;
 send(publisher, mensajeMovimiento);
 
 %% CALCULO DE DIFERENCIAS
