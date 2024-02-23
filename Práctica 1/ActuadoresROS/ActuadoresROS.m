@@ -1,8 +1,7 @@
-avanzar(2);
 girar(180);
-avanzar(18);
-avanzar(2);
-girar(90);
+%avanzar(18);
+%avanzar(2);
+%girar(90);
 
 
 function avanzar(distancia)
@@ -50,6 +49,7 @@ end
 function girar(angulo)
     anguloEnRadianes = angulo * 3.1/180;
     disp(anguloEnRadianes);
+    pause(2);
     %% INICIALIZACIÓN DE ROS
     setenv('ROS_MASTER_URI','http://192.168.1.166:11311')  %Aqui poner la ip de ubuntu 
     setenv('ROS_IP','192.168.1.132') %Aqui poner la ip de windows
@@ -69,12 +69,17 @@ function girar(angulo)
     if (angulo > 0)
 
         r = robotics.Rate(10);
+        mensajeMovimiento.Angular.Z = 0.1;
     
         %% Nos aseguramos recibir un mensaje relacionado con el robot "robot0"
         pause(1);
         while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
             odometria.LatestMessage
         end
+
+        posicionInicial = odometria.LatestMessage.Pose.Pose.Orientation.Z;
+
+        posicionObjetivo = posicionInicial + anguloEnRadianes;
      
         while (1)
             posicionActual = odometria.LatestMessage.Pose.Pose.Orientation;
@@ -84,7 +89,7 @@ function girar(angulo)
     
             disp(['Yaw (radianes): ', num2str(yaw)]);
             
-            if (yaw > anguloEnRadianes)
+            if (yaw > posicionObjetivo)
                 mensajeMovimiento.Angular.Z = 0;
                 send(publisher, mensajeMovimiento);
                 break;
