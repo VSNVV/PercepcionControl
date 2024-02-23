@@ -1,3 +1,4 @@
+avanzar(2);
 girar(180);
 avanzar(18);
 avanzar(2);
@@ -5,52 +6,53 @@ girar(90);
 
 
 function avanzar(distancia)
-%% CONEXION A ROS
-setenv('ROS_MASTER_URI','http://192.168.0.16:11311')  %Aqui poner la ip de ubuntu 
-setenv('ROS_IP','192.168.0.11') %Aqui poner la ip de windows
-
-%% INCIALIZACION DE ROS
-rosinit;
-
-%% DECLARACIÓN DE SUBSCRIBERS
-odometria = rossubscriber('/robot0/odom');
-%% DECLARACIÓN DE PUBLISHERS
-publisher = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist'); %
-%% GENERACIÓN DE MENSAJE
-mensajeMovimiento = rosmessage(publisher)
-
-mensajeMovimiento.Linear.X = 0.3;
-
-r = robotics.Rate(10);
-%% Nos aseguramos recibir un mensaje relacionado con el robot "robot0"
-pause(1);
-while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
-    odometria.LatestMessage
-end
-
-%% Inicializamos la primera posición (coordenadas x,y,z)
-posicionInicial = odometria.LatestMessage.Pose.Pose.Position;
-send(publisher, mensajeMovimiento);
- 
-%% ALGORITMO
-while (distanciaRecorrida < distancia)
-    posicionActual = odometria.LatestMessage.Pose.Pose.Position;
-    disanciaRecorrida = sqrt((posicionIncial.X - posicionActual.X)^2 + (posicionInicial.Y - posicionActual.Y)^2)
-    disp(distanciaRecorrida);
-  
-waitfor(r)
-end
-
-%% DESCONEXIÓN DE ROS
-rosshutdown;
+    %% CONEXION A ROS
+    setenv('ROS_MASTER_URI','http://192.168.1.166:11311')  %Aqui poner la ip de ubuntu 
+    setenv('ROS_IP','192.168.1.132') %Aqui poner la ip de windows
+    
+    %% INCIALIZACION DE ROS
+    rosinit;
+    
+    %% DECLARACIÓN DE SUBSCRIBERS
+    odometria = rossubscriber('/robot0/odom');
+    %% DECLARACIÓN DE PUBLISHERS
+    publisher = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist');
+    %% GENERACIÓN DE MENSAJE
+    mensajeMovimiento = rosmessage(publisher);
+    
+    mensajeMovimiento.Linear.X = 0.3;
+    
+    r = robotics.Rate(10);
+    %% Nos aseguramos recibir un mensaje relacionado con el robot "robot0"
+    pause(1);
+    while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
+        odometria.LatestMessage
+    end
+     
+    %% ALGORITMO
+    distanciaRecorrida = 0;
+    posicionInicial = odometria.LatestMessage.Pose.Pose.Position;
+    send(publisher, mensajeMovimiento);
+    disp(mensajeMovimiento);
+    
+    while (distanciaRecorrida < distancia)
+        posicionActual = odometria.LatestMessage.Pose.Pose.Position;
+        distanciaRecorrida = sqrt((posicionInicial.X - posicionActual.X)^2 + (posicionInicial.Y - posicionActual.Y)^2);
+        disp(distanciaRecorrida);
+      
+    waitfor(r)
+    end
+    
+    %% DESCONEXIÓN DE ROS
+    rosshutdown;
 end
 
 function girar(angulo)
     anguloEnRadianes = angulo * 3.1/180;
-    disp(nuevo_angulo);
+    disp(anguloEnRadianes);
     %% INICIALIZACIÓN DE ROS
-    setenv('ROS_MASTER_URI','http://192.168.0.16:11311')  %Aqui poner la ip de ubuntu 
-    setenv('ROS_IP','192.168.0.11') %Aqui poner la ip de windows
+    setenv('ROS_MASTER_URI','http://192.168.1.166:11311')  %Aqui poner la ip de ubuntu 
+    setenv('ROS_IP','192.168.1.132') %Aqui poner la ip de windows
 
     %% INICIALIZACIÓN DE ROS
     rosinit;
@@ -62,7 +64,7 @@ function girar(angulo)
     publisher = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist');
 
     %% GENERACIÓN DE MENSAJE
-    mensajeMovimiento = rosmessage(publisher)
+    mensajeMovimiento = rosmessage(publisher);
 
     if (angulo > 0)
 
@@ -73,12 +75,11 @@ function girar(angulo)
         while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
             odometria.LatestMessage
         end
-        posicionInicial = odometria.LatestMessage.Pose.Pose.Orientation;
      
         while (1)
             posicionActual = odometria.LatestMessage.Pose.Pose.Orientation;
             posicionAngular = [posicionActual.W, posicionActual.X, posicionActual.Y, posicionActual.Z];
-            [yaw, pitch, roll] = quat2angle(qpos, 'ZYX');
+            yaw = quat2angle(posicionAngular, 'ZYX');
             disp(anguloEnRadianes);
     
             disp(['Yaw (radianes): ', num2str(yaw)]);
@@ -105,8 +106,6 @@ if (angulo < 0)
      odometria.LatestMessage
     end
     
-    posicionInicial = odometria.LatestMessage.Pose.Pose.Orientation;
-    
     send(publisher, mensajeMovimiento);
 
     while (1)
@@ -114,7 +113,7 @@ if (angulo < 0)
         posicionActual = odometria.LatestMessage.Pose.Pose.Orientation;
         posicionAngular = [posicionActual.W, posicionActual.X, posicionActual.Y, posicionActual.Z];
     
-        [yaw, pitch, roll] = quat2angle(posicionAngular, 'ZYX');
+        yaw = quat2angle(posicionAngular, 'ZYX');
         disp(anguloEnRadianes);
         disp(['Yaw (radianes): ', num2str(yaw)]);
 
