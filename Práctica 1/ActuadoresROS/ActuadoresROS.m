@@ -1,7 +1,5 @@
-girar(180);
-%avanzar(18);
 %avanzar(2);
-%girar(90);
+girar(-90);
 
 
 function avanzar(distancia)
@@ -41,6 +39,9 @@ function avanzar(distancia)
       
     waitfor(r)
     end
+
+    mensajeMovimiento.Linear.X = 0.0;
+    send(publisher, mensajeMovimiento);
     
     %% DESCONEXIÓN DE ROS
     rosshutdown;
@@ -69,7 +70,7 @@ function girar(angulo)
     if (angulo > 0)
 
         r = robotics.Rate(10);
-        mensajeMovimiento.Angular.Z = 0.1;
+        mensajeMovimiento.Angular.Z = 0.5;
     
         %% Nos aseguramos recibir un mensaje relacionado con el robot "robot0"
         pause(1);
