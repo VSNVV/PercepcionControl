@@ -2,6 +2,7 @@
 setenv('ROS_MASTER_URI','http://192.168.1.45:11311') % IP de la MV
 setenv('ROS_IP','192.168.1.42') % IP de nuestro ordenador
 
+%% INICIALIZACION DE ROS
 rosinit;
 
 %% SUBSCRIBER AL LASER

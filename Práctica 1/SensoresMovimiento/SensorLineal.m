@@ -15,9 +15,9 @@ msg.Linear.X = 0.9;
 msg.Linear.Y = 0;
 msg.Linear.Z = 0;
 % Velocidad angular (solo se usa Z)
-msg.Angular.X = 0;
-msg.Angular.Y = 0;
-msg.Angular.Z = 0;
+msg.Angular.X = 0.0;
+msg.Angular.Y = 0.0;
+msg.Angular.Z = 0.0;
 %% Periodicidad del bucle de 10Hz
 rate = robotics.Rate(10);
 pause(1); % Pausamos para asegurarnos de que llega un mensaje
