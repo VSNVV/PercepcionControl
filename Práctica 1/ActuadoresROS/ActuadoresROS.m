@@ -6,9 +6,12 @@ setenv('ROS_IP','172.22.9.177') % IP de nuestro ordenador
 rosinit;
 
 %% COMANDOS A EJECUTAR
-imprimePosicion();
+avanzar(2);
 girar(90);
-imprimePosicion();
+avanzar(1);
+girar(-90);
+avanzar(1);
+
 
 %% DESCONEXION DE ROS
 rosshutdown;
@@ -99,21 +102,4 @@ function girar(angulo)
         waitfor(r);
     end
     send(publisher, mensajeMovimiento);
-end
-
-%% FUNCION QUE IMPRIME LA POSICION ACTUAL EN RADIANES
-function imprimePosicion()
-    odometria = rossubscriber('/robot0/odom');
-
-    pause(1);
-    while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
-        odometria.LatestMessage
-    end
-
-    posicion = odometria.LatestMessage.Pose.Pose.Orientation;
-    posicionAngular = [posicion.W, posicion.X, posicion.Y, posicion.Z];
-
-    yaw = quat2angle(posicionAngular, 'ZYX');
-
-    disp(yaw);
 end
