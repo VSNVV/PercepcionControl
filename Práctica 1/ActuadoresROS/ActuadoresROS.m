@@ -26,7 +26,7 @@ function avanzar(distancia)
     mensajeMovimiento.Linear.X = 0.3;
 
     pause(1);
-    while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
+    while (strcmp(odometria.LatestMessage.ChildFrameId, 'robot0') ~= 1)
         odometria.LatestMessage
     end
 
@@ -66,7 +66,7 @@ function girar(angulo)
     end
 
     pause(1);
-    while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
+    while (strcmp(odometria.LatestMessage.ChildFrameId, 'robot0') ~= 1)
         odometria.LatestMessage
     end
 
