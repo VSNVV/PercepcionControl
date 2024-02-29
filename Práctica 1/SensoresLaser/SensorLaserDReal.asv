@@ -15,9 +15,9 @@ listaIteraciones = [];
 contador = 0;
 i=0;
 while(i<100)
-    mensajeLaser = receive(laser, 10);
+    mensajeLaser = receive(laser, 1);
     distanciaLaser = mensajeLaser.Ranges(200);
-    if(~isinf(distanciasLaser))
+    if(distanciasLaser))
         disp(distanciaLaser);
     i=i+1;
     listaDistancias = [listaDistancias, distanciaLaser];

@@ -1,8 +1,7 @@
 %% CONEXION A ROS
 setenv('ROS_MASTER_URI','http://172.29.30.173:11311') % IP de la MV
-setenv('ROS_IP','172.29.29.56') % IP de nuestro ordenador
+setenv('ROS_IP','192.168.56.1') % IP de nuestro ordenador
 
-rosshutdown;
 %% INICIALIZACION DE ROS
 rosinit;
 
@@ -13,20 +12,15 @@ laser = rossubscriber('/scan');
 
 listaDistancias = [];
 listaIteraciones = [];
-i=0;
-while (i<100)
+
+while (lenght(listaDistancias)<1000)
     
-   
-    mensajeLaser = receive(laser, 10);
+    mensajeLaser = receive(laser, 1);
     distanciasLaser = mensajeLaser.Ranges(200);
-    if(~isinf(distanciasLaser))
-        disp(distanciasLaser);
-    i=i+1;
     listaDistancias = [listaDistancias, distanciasLaser];
     listaIteraciones = [listaIteraciones, i];
 
     disp(i);
-    end
 end
 
 plot(listaIteraciones, listaDistancias);

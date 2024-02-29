@@ -1,6 +1,6 @@
 %% CONEXION A ROS
-setenv('ROS_MASTER_URI','http://192.168.1.45:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.42') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://172.29.30.173:11311') % IP de la MV
+setenv('ROS_IP','192.168.56.1') % IP de nuestro ordenador
 
 rosinit;
 

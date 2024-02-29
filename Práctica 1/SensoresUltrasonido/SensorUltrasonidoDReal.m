@@ -1,7 +1,7 @@
 %% CONEXION A ROS
-setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.156') % IP de nuestro ordenador
-
+setenv('ROS_MASTER_URI','http://172.29.30.178:11311') % IP de la MV
+setenv('ROS_IP','192.168.56.1') % IP de nuestro ordenador
+rosshutdown;
 %% INICIALIZACION DE ROS
 rosinit;
 
@@ -12,12 +12,12 @@ sonar2 = rossubscriber('/sonar_2');
 listaDistancias = [];
 listaDistanciasFiltradas = [];
 listaIteraciones = [];
-
-for i = 0:1000
+i=0;
+while(i)
     
-    mensajeSonar = receive(sonar3, 1);
+    mensajeSonar = receive(sonar2, 10);
     distanciaActual = mensajeSonar.Range_;
-
+    if(~isinf(distanciasLaser))
     listaDistancias = [listaDistancias, distanciaActual];
 
     if(length(listaDistancias) == 5)
@@ -30,6 +30,7 @@ for i = 0:1000
     listaIteraciones = [listaIteraciones, i];
 
     disp(i);
+    end
 end
 
 plot(listaIteraciones, listaDistanciasFiltradas);
