@@ -2,8 +2,8 @@
 %setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
 
 rosshutdown;
-setenv('ROS_MASTER_URI','http://172.29.30.178:11311') % IP de la MV
-setenv('ROS_IP','172.29.29.56') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
+setenv('ROS_IP','172.31.176.1') % IP de nuestro ordenador
 rosinit;
 
 Recta = struct('pendiente', 0, 'interseccion', 0);
@@ -16,18 +16,18 @@ listaDistanciasLaser = mensajeLaser.Ranges;
 distanciaFrontal = listaDistanciasLaser(100);
 
 
+PuntoFrontalIzquierdo=calcularPunto(listaDistanciasLaser(200),posicionAngulo(200));
+PuntoFrontalDerecho=calcularPunto(listaDistanciasLaser(160),posicionAngulo(200));
 
-PuntoFrontalIzquierdo=calcularPunto(listaDistanciasLaser(225),posicionAngulo(225));
-PuntoFrontalDerecho=calcularPunto(listaDistanciasLaser(175),posicionAngulo(175));
+PuntoIzquierdoIzquierdo=calcularPunto(listaDistanciasLaser(290),posicionAngulo(290));
+PuntoIzquierdoDerecho=calcularPunto(listaDistanciasLaser(250),posicionAngulo(250));
 
-PuntoIzquierdoIzquierdo=calcularPunto(listaDistanciasLaser(325),posicionAngulo(325));
-PuntoIzquierdoDerecho=calcularPunto(listaDistanciasLaser(275),posicionAngulo(275));
+PuntoTraseroIzquierdo=calcularPunto(listaDistanciasLaser(20),posicionAngulo(20));
+PuntoTraseroDerecho=calcularPunto(listaDistanciasLaser(340),posicionAngulo(340)); 
 
-PuntoTraseroIzquierdo=calcularPunto(listaDistanciasLaser(25),posicionAngulo(25));
-PuntoTraseroDerecho=calcularPunto(listaDistanciasLaser(375),posicionAngulo(375)); 
+PuntoDerechoIzquierdo=calcularPunto(listaDistanciasLaser(110),posicionAngulo(110));
+PuntoDerechoDerecho=calcularPunto(listaDistanciasLaser(70),posicionAngulo(70));
 
-PuntoDerechoIzquierdo=calcularPunto(listaDistanciasLaser(125),posicionAngulo(125));
-PuntoDerechoDerecho=calcularPunto(listaDistanciasLaser(75),posicionAngulo(75));
 
 rectaFrontal= calcularRecta(PuntoFrontalIzquierdo,PuntoFrontalDerecho);
 rectaTrasera=calcularRecta(PuntoTraseroIzquierdo,PuntoTraseroDerecho);
@@ -40,7 +40,7 @@ rosshutdown;
 
 function punto = calcularPunto(distancia, angulo)
 
-   if distancia == inf || distancia>10
+   if distancia == inf || distancia>4
     punto.ejeX = NaN;
     punto.ejeY = NaN;
    else
@@ -75,7 +75,7 @@ function anguloGrados = calcularAnguloEntreRectas(recta1, recta2)
     anguloGrados = abs(rad2deg(anguloRadianes));
 end
 function grados = posicionAngulo(posicion)
-    grados= mod((posicion*360/400)+180,360);
+    grados= mod(posicion+180,360);
 end
 
 function analizarRectas(rectaFrontal, rectaIzquierda, rectaTrasera, rectaDerecha)

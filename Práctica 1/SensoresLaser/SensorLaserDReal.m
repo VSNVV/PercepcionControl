@@ -14,25 +14,25 @@ listaDistanciasFiltradas = [];
 listaIteraciones = [];
 contador = 0;
 i=0;
-while(i<100)
+while(i<1000)
     mensajeLaser = receive(laser, 10);
     distanciaLaser = mensajeLaser.Ranges(200);
-    if(~isinf(distanciasLaser))
+    if(~isinf(distanciaLaser))
         disp(distanciaLaser);
-    i=i+1;
-    listaDistancias = [listaDistancias, distanciaLaser];
+        i=i+1;
+        listaDistancias = [listaDistancias, distanciaLaser];
 
-    if(length(listaDistancias) == 5)
-        distanciaMedia = mean(listaDistancias);
-        listaDistanciasFiltradas = [listaDistanciasFiltradas, distanciaMedia];
+        if(length(listaDistancias) == 5)
+            distanciaMedia = mean(listaDistancias);
+            listaDistanciasFiltradas = [listaDistanciasFiltradas, distanciaMedia];
+    
+            listaDistancias = [];
+    
+            listaIteraciones = [listaIteraciones, contador];
+            contador = contador + 1;
+        end
 
-        listaDistancias = [];
-
-        listaIteraciones = [listaIteraciones, contador];
-        contador = contador + 1;
-    end
-
-    disp(i);
+        disp(i);
     end
 end
 

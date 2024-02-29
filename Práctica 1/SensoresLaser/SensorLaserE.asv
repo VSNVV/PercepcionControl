@@ -2,23 +2,23 @@
 %setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
 
 rosshutdown;
-setenv('ROS_MASTER_URI','http://172.29.30.178:11311') % IP de la MV
-setenv('ROS_IP','172.29.29.56') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
+setenv('ROS_IP','172.31.176.1') % IP de nuestro ordenador
 rosinit;
 
 Recta = struct('pendiente', 0, 'interseccion', 0);
 Punto = struct('ejeX', 0,'ejeY',0);
 
 
-laser = rossubscriber('/scan');
+laser = rossubscriber('/robot0/laser_1');
 mensajeLaser = receive(laser, 1);
 listaDistanciasLaser = mensajeLaser.Ranges;
 distanciaFrontal = listaDistanciasLaser(100);
 
 
 
-PuntoFrontalIzquierdo=calcularPunto(listaDistanciasLaser(225),posicionAngulo(225));
-PuntoFrontalDerecho=calcularPunto(listaDistanciasLaser(175),posicionAngulo(175));
+PuntoFrontalIzquierdo=calcularPunto(listaDistanciasLaser(200),);
+PuntoFrontalDerecho=calcularPunto(listaDistanciasLaser(160),posicionAngulo(175));
 
 PuntoIzquierdoIzquierdo=calcularPunto(listaDistanciasLaser(325),posicionAngulo(325));
 PuntoIzquierdoDerecho=calcularPunto(listaDistanciasLaser(275),posicionAngulo(275));
@@ -40,7 +40,7 @@ rosshutdown;
 
 function punto = calcularPunto(distancia, angulo)
 
-   if distancia == inf || distancia>10
+   if distancia == inf || distancia>4
     punto.ejeX = NaN;
     punto.ejeY = NaN;
    else
