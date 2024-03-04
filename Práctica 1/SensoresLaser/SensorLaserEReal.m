@@ -2,8 +2,8 @@
 %setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
 
 rosshutdown;
-setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
-setenv('ROS_IP','172.31.176.1') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://172.29.30.178:11311') % IP de la MV
+setenv('ROS_IP','172.29.29.50') % IP de nuestro ordenador
 rosinit;
 
 Recta = struct('pendiente', 0, 'interseccion', 0);
@@ -11,7 +11,7 @@ Punto = struct('ejeX', 0,'ejeY',0);
 
 
 laser = rossubscriber('/scan');
-mensajeLaser = receive(laser, 1);
+mensajeLaser = receive(laser, 10);
 listaDistanciasLaser = mensajeLaser.Ranges;
 distanciaFrontal = listaDistanciasLaser(100);
 
@@ -28,6 +28,14 @@ PuntoTraseroDerecho=calcularPunto(listaDistanciasLaser(340),posicionAngulo(340))
 PuntoDerechoIzquierdo=calcularPunto(listaDistanciasLaser(110),posicionAngulo(110));
 PuntoDerechoDerecho=calcularPunto(listaDistanciasLaser(70),posicionAngulo(70));
 
+PuntoFrontalIzquierdo
+PuntoFrontalDerecho
+PuntoIzquierdoDerecho
+PuntoIzquierdoIzquierdo
+PuntoDerechoDerecho
+PuntoDerechoIzquierdo
+PuntoTraseroDerecho
+PuntoTraseroIzquierdo
 
 rectaFrontal= calcularRecta(PuntoFrontalIzquierdo,PuntoFrontalDerecho);
 rectaTrasera=calcularRecta(PuntoTraseroIzquierdo,PuntoTraseroDerecho);
@@ -40,7 +48,7 @@ rosshutdown;
 
 function punto = calcularPunto(distancia, angulo)
 
-   if distancia == inf || distancia>4
+   if distancia == inf || distancia>1
     punto.ejeX = NaN;
     punto.ejeY = NaN;
    else
