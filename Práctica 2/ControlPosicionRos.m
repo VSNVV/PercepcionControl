@@ -28,8 +28,8 @@ y_objetivo = input('Introduce la coordenada Y de destino: ');
 tic
 
 % Inicializamos las variables del ALGORITMO
-Ka = 0.5; % Constante de proporcionalidad del control de la orientacion
-Kp = 1.0; % Constante de proporcionalidad del control de la velocidad
+Ka = 1.0; % Constante de proporcionalidad del control de la orientacion
+Kp = 0.5; % Constante de proporcionalidad del control de la velocidad
 tolerancia = 0.1;
 activo = true;
 
