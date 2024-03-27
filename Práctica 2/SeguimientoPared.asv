@@ -31,9 +31,9 @@ dist
 lastpos =pos;
 lastdist =dist;
 lastdistav =0;
-D=1;
-Kd=2;
-Ko=Kd*0.07;
+D=2;
+Kd=1;
+Ko=0.1;
 msg_vel.Linear.X = 1; % velocidad lineal hacia adelante
 send(pub, msg_vel); % enviar el mensaje de velocidad al robot
 pause(1); % esperar 1 segundo
@@ -71,7 +71,7 @@ consigna_vel_ang
 %% Condición de parada
 if (Edist<0.01) && (Eori<0.01)
  %break;
- disp("pingo");
+ display("pingo");
 end
 %% Aplicamos consignas de control
 msg_vel.Linear.X= consigna_vel_linear;
