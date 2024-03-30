@@ -34,10 +34,10 @@ errorIntegralDistancia =0;
 errorIntegralDistanciaAnterior=0;
 errorIntegralAngular =0;
 errorIntegralAngularAnterior=0;
-Kpa = 1.; % Constante de proporcionalidad del control de la orientacion
-Kpd = 0.5; % Constante de proporcionalidad del control de la velocidad
-Kia = 0.005; % Constante de integral del control de la orientacion
-Kid = 0.001; % Constante de integral del control de la velocidad
+Kpa = 0.005; % Constante de proporcionalidad del control de la orientacion
+Kpd = 0.1; % Constante de proporcionalidad del control de la velocidad
+Kia = 0.0005; % Constante de integral del control de la orientacion
+Kid = 0.01; % Constante de integral del control de la velocidad
 tolerancia = 0.1;
 activo = true;
 

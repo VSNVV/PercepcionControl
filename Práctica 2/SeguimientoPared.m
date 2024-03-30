@@ -1,7 +1,7 @@
 rosshutdown;
 %% INICIALIZACIÓN DE ROS (COMPLETAR ESPACIOS CON LAS DIRECCIONES IP)
 setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.156') % IP de nuestro ordenador
+setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
 rosinit;
 
 %% DECLARACIÓN DE VARIABLES NECESARIAS PARA EL CONTROL
@@ -25,15 +25,14 @@ end
 %% Inicializamos variables para el control
 i = 0;
 pos = odom.LatestMessage.Pose.Pose.Position;
-pos
 dist = 0;
 dist
 lastpos =pos;
 lastdist =dist;
 lastdistav =0;
-D=1;
-Kd=2;
-Ko=Kd*0.07;
+D=1.5;
+Kd=1;
+Ko=0.01;
 msg_vel.Linear.X = 1; % velocidad lineal hacia adelante
 send(pub, msg_vel); % enviar el mensaje de velocidad al robot
 pause(1); % esperar 1 segundo
@@ -69,9 +68,10 @@ consigna_vel_linear = 0.3;
 consigna_vel_ang = Kd*Edist+Ko*Eori;
 consigna_vel_ang
 %% Condición de parada
-if (Edist<0.01) && (Eori<0.01)
- %break;
+if (Edist<0.0005) && (Eori<0.0005)
  disp("pingo");
+% break;
+ 
 end
 %% Aplicamos consignas de control
 msg_vel.Linear.X= consigna_vel_linear;
