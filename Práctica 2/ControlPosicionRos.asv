@@ -34,10 +34,10 @@ errorIntegralDistancia =0;
 errorIntegralDistanciaAnterior=0;
 errorIntegralAngular =0;
 errorIntegralAngularAnterior=0;
-Kpa = 0.005; % Constante de proporcionalidad del control de la orientacion
-Kpd = 0.1; % Constante de proporcionalidad del control de la velocidad
-Kia = 0.0005; % Constante de integral del control de la orientacion
-Kid = 0.01; % Constante de integral del control de la velocidad
+Kpa = 1.; % Constante de proporcionalidad del control de la orientacion
+Kpd = 0.5; % Constante de proporcionalidad del control de la velocidad
+Kia = 0.005; % Constante de integral del control de la orientacion
+Kid = 0.001; % Constante de integral del control de la velocidad
 tolerancia = 0.1;
 activo = true;
 
@@ -95,3 +95,13 @@ send(publisher, mensajeMovimiento);
 
 % Una vez detenemos el robot nos desconectamos de ROS
 rosshutdown;
+
+function [xg,yg]= LocalAGlobal(xr,yr, x, y ,alfa)
+  xg=x+cos(alfa)*xr- sen(alfa)*yr;
+  yg=y+sin(alfa)*xr+ cos(alfa)*yr;
+end
+
+function [xr,yr]= GlobalALocal (xg,yg, x, y ,alfa)
+  xr=cos(alfa)*(xg-x)- sen(alfa)*yr-y);
+  yr=y+sin(alfa)*xr+ cos(alfa)*yr;
+end

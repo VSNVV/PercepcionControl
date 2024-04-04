@@ -33,8 +33,8 @@ D=1.5;
 %Kd=100;
 Kd=1;
 %Kd=0.01;
-%Ko=1;
-Ko=0.01;
+Ko=1;
+%Ko=0.01;
 %Ko=0.0001;
 msg_vel.Linear.X = 1; % velocidad lineal hacia adelante
 send(pub, msg_vel); % enviar el mensaje de velocidad al robot
@@ -57,19 +57,17 @@ end
 %% Calculamos el error de distancia y orientación
 Eori = atan2(abs(dist-lastdist), distav);
 Edist = (dist+0.105)*cos(Eori)-D;
-dist
 medidas(1,i)= dist;
 medidas(2,i)= lastdist; %% valor anterior de distancia
 medidas(3,i)= distav;
 medidas(4,i)= Eori;
 medidas(5,i)= Edist;
-
 %% Calculamos las consignas de velocidades
-consigna_vel_linear = 0.7;
+consigna_vel_linear = 0.3;
 consigna_vel_ang = Kd*Edist+Ko*Eori;
 %% Condición de parada
 if (Edist<0.0005) && (Eori<0.0005)
-
+ disp("pingo");
 % break;
  
 end
@@ -89,15 +87,9 @@ lastvAng = consigna_vel_ang;
 lastdistav = distav;
 % Temporización del bucle según el parámetro establecido en r
 waitfor(r);
-if i==1000
- disp("finiquitado")
- 
- save('medidas.mat','medidas');
- break;
+if i==MAX_TIME
+ %break;
 end
 end
+save('medidas.mat','medidas');
 %% DESCONEXIÓN DE ROS
-
-
-
-    
