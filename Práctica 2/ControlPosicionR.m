@@ -1,26 +1,31 @@
+
 %% Conexion a ros
 rosshutdown;
-setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://172.29.30.172:11311') % IP de la MV
+setenv('ROS_IP','172.29.29.85') % IP de nuestro ordenador
 rosinit;
 
 
 %% SUBSCRIBERS
-odometria = rossubscriber('/robot0/odom');
+odometria = rossubscriber('/pose');
+pubActivaMotor = rospublisher('/cmd_motor_state','std_msgs/Int32');
 %% PUBLISHERS
-publisher = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist'); %
+publisher = rospublisher('cmd_vel', 'geometry_msgs/Twist'); 
 %% MENSAJE
 mensajeMovimiento = rosmessage(publisher);
+mensajeActivarMotor = rosmessage(pubActivaMotor);
 
 robotRate = robotics.Rate(10);
 pause(1);
-robotRate
 
-while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
- odom.LatestMessage
+while (strcmp(odometria.LatestMessage.ChildFrameId,'base_link') ~= 1)
+ odometria.LatestMessage
 end
 
 %% ALGORITMO DE CONTROL DE POSICION
+% Activamos motores del robot
+mensajeActivarMotor.Data = 1;
+send(pubActivaMotor, mensajeActivarMotor);
 
 % Pedimos al ususario las coordenadas de destino por teclado
 x_objetivo = input('Introduce la coordenada X de destino: ');
@@ -34,9 +39,9 @@ errorIntegralDistancia =0;
 errorIntegralDistanciaAnterior=0;
 errorIntegralAngular =0;
 errorIntegralAngularAnterior=0;
-Kpa = 1.; % Constante de proporcionalidad del control de la orientacion
-Kpd = 0.5; % Constante de proporcionalidad del control de la velocidad
-Kia = 0.005; % Constante de integral del control de la orientacion
+Kpa = 0.5; % Constante de proporcionalidad del control de la orientacion
+Kpd = 0.1; % Constante de proporcionalidad del control de la velocidad
+Kia = 0.0005; % Constante de integral del control de la orientacion
 Kid = 0.001; % Constante de integral del control de la velocidad
 tolerancia = 0.1;
 activo = true;
@@ -95,13 +100,3 @@ send(publisher, mensajeMovimiento);
 
 % Una vez detenemos el robot nos desconectamos de ROS
 rosshutdown;
-
-function [xg,yg]= LocalAGlobal(xr,yr, x, y ,alfa)
-  xg=x+cos(alfa)*xr- sen(alfa)*yr;
-  yg=y+sin(alfa)*xr+ cos(alfa)*yr;
-end
-
-function [xr,yr]= GlobalALocal (xg,yg, x, y ,alfa)
-  xr=cos(alfa)*(xg-x) + sen(alfa)*(yg-y);
-  yr=-sin(alfa)*(xg-x)+ cos(alfa)*(yg-y);
-end

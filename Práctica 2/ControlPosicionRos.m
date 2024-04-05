@@ -15,7 +15,8 @@ mensajeMovimiento = rosmessage(publisher);
 robotRate = robotics.Rate(10);
 pause(1);
 robotRate
-
+medidas = zeros(5,1000);
+i=0;
 while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
  odom.LatestMessage
 end
@@ -42,6 +43,7 @@ tolerancia = 0.1;
 activo = true;
 
 while activo
+    i=i+1;
     % Leemos la posición actual del robot
     x_actual = odometria.LatestMessage.Pose.Pose.Position.X;
     y_actual = odometria.LatestMessage.Pose.Pose.Position.Y;
@@ -52,6 +54,7 @@ while activo
     [yaw, pitch, roll] = quat2angle(posicionAngularActual, 'ZYX');
 
     % Calcuamos el error tanto de distancia como de objetivo
+
     errorDistancia = sqrt((x_objetivo - x_actual)^2 + (y_objetivo - y_actual)^2);
     errorOrientacion = atan2(y_objetivo - y_actual, x_objetivo - x_actual) - yaw;
     
@@ -74,7 +77,10 @@ while activo
     mensajeMovimiento.Linear.X = velocidadLineal;
     mensajeMovimiento.Angular.Z = velocidadAngular;
     send(publisher, mensajeMovimiento);
-
+    medidas(1,i)=errorDistancia;
+    medidas(2,i)=errorOrientacion;
+    medidas(3,i)=velocidadLineal;
+    medidas(4,i)=velocidadAngular;
     % En el caso de que hayamos llegado a la posicion objetivo, detendremos el algoritmo:
     if ((errorDistancia < tolerancia) && (abs(errorOrientacion) < tolerancia))
         % Se verifica que se ha llegado al objetivo, por tanto, marcamos el punto de finalizacion del algoritmo y lo imprimimos
@@ -96,12 +102,3 @@ send(publisher, mensajeMovimiento);
 % Una vez detenemos el robot nos desconectamos de ROS
 rosshutdown;
 
-function [xg,yg]= LocalAGlobal(xr,yr, x, y ,alfa)
-  xg=x+cos(alfa)*xr- sen(alfa)*yr;
-  yg=y+sin(alfa)*xr+ cos(alfa)*yr;
-end
-
-function [xr,yr]= GlobalALocal (xg,yg, x, y ,alfa)
-  xr=cos(alfa)*(xg-x) + sen(alfa)*(yg-y);
-  yr=-sin(alfa)*(xg-x)+ cos(alfa)*(yg-y);
-end

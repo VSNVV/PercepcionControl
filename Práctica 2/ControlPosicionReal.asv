@@ -52,7 +52,9 @@ while activo
     [yaw, pitch, roll] = quat2angle(posicionAngularActual, 'ZYX');
 
     % Calcuamos el error tanto de distancia como de objetivo
-    errorDistancia = sqrt((x_objetivo - x_actual)^2 + (y_objetivo - y_actual)^2);
+    [x_local,y_local]= GlobalALocal(x_actual,y_actual,x_objetivo,y_objetivo,yaw);
+
+    errorDistancia = sqrt((x_objetivo - x_local)^2 + (y_objetivo - y_actual)^2);
     errorOrientacion = atan2(y_objetivo - y_actual, x_objetivo - x_actual) - yaw;
     
     errorIntegralDistancia = errorIntegralDistanciaAnterior + errorDistancia * robotRate.DesiredPeriod;
@@ -102,6 +104,6 @@ function [xg,yg]= LocalAGlobal(xr,yr, x, y ,alfa)
 end
 
 function [xr,yr]= GlobalALocal (xg,yg, x, y ,alfa)
-  xr=cos(alfa)*(xg-x)- sen(alfa)*yr-y);
-  yr=y+sin(alfa)*xr+ cos(alfa)*yr;
+  xr=cos(alfa)*(xg-x) + sen(alfa)*(yg-y);
+  yr=-sin(alfa)*(xg-x)+ cos(alfa)*(yg-y);
 end
