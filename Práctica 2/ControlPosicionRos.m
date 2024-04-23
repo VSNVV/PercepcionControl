@@ -1,7 +1,7 @@
 %% Conexion a ros
 rosshutdown;
-setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.132') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://192.168.1.134:11311') % IP de la MV
+setenv('ROS_IP','192.168.1.133') % IP de nuestro ordenador
 rosinit;
 
 
@@ -14,10 +14,9 @@ mensajeMovimiento = rosmessage(publisher);
 
 robotRate = robotics.Rate(10);
 pause(1);
-robotRate
-medidas = zeros(5,1000);
-i=0;
-while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
+medidas = zeros(5, 1000);
+i = 0;
+while(strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
  odom.LatestMessage
 end
 
@@ -31,10 +30,10 @@ y_objetivo = input('Introduce la coordenada Y de destino: ');
 tic
 
 % Inicializamos las variables del ALGORITMO
-errorIntegralDistancia =0;
-errorIntegralDistanciaAnterior=0;
-errorIntegralAngular =0;
-errorIntegralAngularAnterior=0;
+errorIntegralDistancia = 0;
+errorIntegralDistanciaAnterior = 0;
+errorIntegralAngular = 0;
+errorIntegralAngularAnterior = 0;
 Kpa = 1.; % Constante de proporcionalidad del control de la orientacion
 Kpd = 0.5; % Constante de proporcionalidad del control de la velocidad
 Kia = 0.005; % Constante de integral del control de la orientacion
@@ -43,10 +42,14 @@ tolerancia = 0.1;
 activo = true;
 
 while activo
-    i=i+1;
+    i = i + 1;
     % Leemos la posición actual del robot
     x_actual = odometria.LatestMessage.Pose.Pose.Position.X;
     y_actual = odometria.LatestMessage.Pose.Pose.Position.Y;
+    if(i == 1)
+        disp("Posicion de inicio X: " + x_actual);
+        disp("Posicion de inicio Y: " + y_actual);
+    end
 
     % Ahora haremos lo mismo pero con la posicion angular del robot
     posAngular = odometria.LatestMessage.Pose.Pose.Orientation;
@@ -59,33 +62,36 @@ while activo
     errorOrientacion = atan2(y_objetivo - y_actual, x_objetivo - x_actual) - yaw;
     
     errorIntegralDistancia = errorIntegralDistanciaAnterior + errorDistancia * robotRate.DesiredPeriod;
-    errorIntegralDistanciaAnterior= errorIntegralDistancia;
+    errorIntegralDistanciaAnterior = errorIntegralDistancia;
 
-    errorIntegralAngular =errorIntegralAngularAnterior+errorOrientacion*robotRate.DesiredPeriod;
-    errorIntegralAngularAnterior=errorIntegralAngular;
+    errorIntegralAngular = errorIntegralAngularAnterior+errorOrientacion*robotRate.DesiredPeriod;
+    errorIntegralAngularAnterior = errorIntegralAngular;
 
 
     % Segun el error de distancia, podremos modelar la velocidad lineal que vamos a seguir de la siguiente manera:
-    velocidadLineal = Kpd * errorDistancia + Kid*errorIntegralDistanciaAnterior;
+    velocidadLineal = Kpd * errorDistancia + Kid * errorIntegralDistanciaAnterior;
     velocidadLineal = min(velocidadLineal, 1); % Limitamos la velocidad lineal a 0.5 como maximo
 
     % Hacemos lo mismo con el error de orientacion de la siguiente manera:
-    velocidadAngular = Kpa * errorOrientacion+ Kia*errorIntegralAngularAnterior;
+    velocidadAngular = Kpa * errorOrientacion + Kia * errorIntegralAngularAnterior;
     velocidadAngular = min(velocidadAngular, 0.5); % Limitamos la velocidad angular a 1 como maximo
 
     % Ahora enviamos el comando de movimiento al robot:
     mensajeMovimiento.Linear.X = velocidadLineal;
     mensajeMovimiento.Angular.Z = velocidadAngular;
     send(publisher, mensajeMovimiento);
-    medidas(1,i)=errorDistancia;
-    medidas(2,i)=errorOrientacion;
-    medidas(3,i)=velocidadLineal;
-    medidas(4,i)=velocidadAngular;
+    medidas(1, i) = errorDistancia;
+    medidas(2, i) = errorOrientacion;
+    medidas(3, i) = velocidadLineal;
+    medidas(4, i) = velocidadAngular;
     % En el caso de que hayamos llegado a la posicion objetivo, detendremos el algoritmo:
     if ((errorDistancia < tolerancia) && (abs(errorOrientacion) < tolerancia))
         % Se verifica que se ha llegado al objetivo, por tanto, marcamos el punto de finalizacion del algoritmo y lo imprimimos
         toc;
         disp(toc);
+        % Imprimimos la posicion final que ha tomado el robot
+        disp("Posicion final X: " + x_actual);
+        disp("Posicion final Y: " + y_actual);
         % Indicamos la finalización del algoritmo
         activo = false;
     end
@@ -101,4 +107,3 @@ send(publisher, mensajeMovimiento);
 
 % Una vez detenemos el robot nos desconectamos de ROS
 rosshutdown;
-
