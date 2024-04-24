@@ -5,7 +5,6 @@ setenv('ROS_MASTER_URI','http://172.29.30.172:11311') % IP de la MV
 setenv('ROS_IP','172.29.29.85') % IP de nuestro ordenador
 rosinit;
 
-
 %% SUBSCRIBERS
 odometria = rossubscriber('/pose');
 pubActivaMotor = rospublisher('/cmd_motor_state','std_msgs/Int32');

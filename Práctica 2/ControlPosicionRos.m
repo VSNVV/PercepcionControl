@@ -46,6 +46,8 @@ while activo
     % Leemos la posición actual del robot
     x_actual = odometria.LatestMessage.Pose.Pose.Position.X;
     y_actual = odometria.LatestMessage.Pose.Pose.Position.Y;
+    % Si es la primera iteracion, estamos en la posicon incial, por tanto,
+    % la imprimimos por pantalla
     if(i == 1)
         disp("Posicion de inicio X: " + x_actual);
         disp("Posicion de inicio Y: " + y_actual);
@@ -64,7 +66,7 @@ while activo
     errorIntegralDistancia = errorIntegralDistanciaAnterior + errorDistancia * robotRate.DesiredPeriod;
     errorIntegralDistanciaAnterior = errorIntegralDistancia;
 
-    errorIntegralAngular = errorIntegralAngularAnterior+errorOrientacion*robotRate.DesiredPeriod;
+    errorIntegralAngular = errorIntegralAngularAnterior + errorOrientacion * robotRate.DesiredPeriod;
     errorIntegralAngularAnterior = errorIntegralAngular;
 
 
@@ -84,6 +86,13 @@ while activo
     medidas(2, i) = errorOrientacion;
     medidas(3, i) = velocidadLineal;
     medidas(4, i) = velocidadAngular;
+    % Imprimimos los valores que tenemos actualmente
+    disp("Error de distancia --> " + errorDistancia);
+    disp("Error de orientacion --> " + errorOrientacion);
+    disp("Velocidad lineal --> " + velocidadLineal);
+    disp("Velocidad angular --> " + velocidadAngular);
+    disp(" ");
+    disp(" ");
     % En el caso de que hayamos llegado a la posicion objetivo, detendremos el algoritmo:
     if ((errorDistancia < tolerancia) && (abs(errorOrientacion) < tolerancia))
         % Se verifica que se ha llegado al objetivo, por tanto, marcamos el punto de finalizacion del algoritmo y lo imprimimos
