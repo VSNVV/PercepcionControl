@@ -22,24 +22,38 @@ end
 
 %% ALGORITMO DE CONTROL DE POSICION
 
-% Pedimos al ususario las coordenadas de destino por teclado
-x_objetivo = input('Introduce la coordenada X de destino: ');
-y_objetivo = input('Introduce la coordenada Y de destino: ');
-
 % Una vez cogidas coordenadas de destino, establecemos el punto de partida
 tic
 
 % Inicializamos las variables del ALGORITMO
-errorIntegralDistancia =0;
-errorIntegralDistanciaAnterior=0;
-errorIntegralAngular =0;
-errorIntegralAngularAnterior=0;
-a = false;
-Kpa = 0.05; % Constante de proporcionalidad del control de la orientacion
-Kpd = 0.5; % Constante de proporcionalidad del control de la velocidad
-tolerancia = 1;
-activo = true;
 
+
+desplazar(10,10);
+desplazar (5,10);
+desplazar(5,5);
+desplazar(5,10);
+
+
+% Una vez detenemos el robot nos desconectamos de ROS
+rosshutdown;
+function desplazar(x_objetivo,y_objetivo)
+odometria = rossubscriber('/robot0/odom');
+%% PUBLISHERS
+publisher = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist'); %
+%% MENSAJE
+mensajeMovimiento = rosmessage(publisher);
+robotRate = robotics.Rate(10);
+pause(1);
+
+tic
+while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
+ odom.LatestMessage
+end
+margen = false;
+Kpa = 0.05; % Constante de proporcionalidad del control de la orientacion
+Kpd = 0.75; % Constante de proporcionalidad del control de la velocidad
+tolerancia = 0.25;
+activo = true;
 while activo
     % Leemos la posición actual del robot
     x_actual = odometria.LatestMessage.Pose.Pose.Position.X;
@@ -48,38 +62,33 @@ while activo
     % Ahora haremos lo mismo pero con la posicion angular del robot
     posAngular = odometria.LatestMessage.Pose.Pose.Orientation;
     posicionAngularActual = [posAngular.W, posAngular.X, posAngular.Y, posAngular.Z];
-    [yaw, pitch, roll] = quat2angle(posicionAngularActual, 'ZYX');
+    [yaw, ~, ~] = quat2angle(posicionAngularActual, 'ZYX');
 
     % Calcuamos el error tanto de distancia como de objetivo
-
     errorDistancia = sqrt((x_objetivo - x_actual)^2 + (y_objetivo - y_actual)^2);
     errorOrientacion = atan2(y_objetivo - y_actual, x_objetivo - x_actual) - yaw;
-    errorOrientacion =correctEori(errorOrientacion);
+    errorOrientacion =corregirOrientacion(errorOrientacion);
     errorOrientacion = rad2deg(errorOrientacion);
-    errorOrientacion
 
     % Segun el error de distancia, podremos modelar la velocidad lineal que vamos a seguir de la siguiente manera:
-    if(abs(errorOrientacion)<0.5 ||a)
-        if (abs(errorOrientacion)>1)
-            a =false;
+    if(abs(errorOrientacion)<0.5 ||margen)
+        if (abs(errorOrientacion)>0.25)
+            margen =false;
         else
-            a =true;
+            margen =true;
         end
         velocidadAngular =0;
         velocidadLineal = Kpd * errorDistancia;
-        velocidadLineal = min(velocidadLineal, 1); % Limitamos la velocidad lineal a 0.5 como maximo
+        velocidadLineal = min(velocidadLineal, 1);
     else
         velocidadLineal =0;
-
         velocidadAngular = Kpa * errorOrientacion;
         if velocidadAngular>0.5
             velocidadAngular=0.5;
         elseif velocidadAngular<-0.5
             velocidadAngular=-0.5;
         end
-        %velocidadAngular = min(abs(velocidadAngular), 0.5); % Limitamos la velocidad angular a 1 como maximo
     end
-    % Hacemos lo mismo con el error de orientacion de la siguiente manera:
 
     % Ahora enviamos el comando de movimiento al robot:
     mensajeMovimiento.Linear.X = velocidadLineal;
@@ -103,11 +112,9 @@ end
 mensajeMovimiento.Linear.X = 0.0;
 mensajeMovimiento.Angular.Z = 0.0;
 send(publisher, mensajeMovimiento);
+end     
 
-% Una vez detenemos el robot nos desconectamos de ROS
-rosshutdown;
-
-function E_ori_corregido = correctEori(E_ori)
+function E_ori_corregido = corregirOrientacion(E_ori)
     if E_ori <-pi
         E_ori = E_ori + (2*pi);
     end

@@ -34,8 +34,8 @@ errorIntegralDistancia =0;
 errorIntegralDistanciaAnterior=0;
 errorIntegralAngular =0;
 errorIntegralAngularAnterior=0;
-a = false;
-Kpa = 0.01; % Constante de proporcionalidad del control de la orientacion
+margen = false;
+Kpa = 0.05; % Constante de proporcionalidad del control de la orientacion
 Kpd = 0.5; % Constante de proporcionalidad del control de la velocidad
 tolerancia = 1;
 activo = true;
@@ -59,11 +59,11 @@ while activo
     errorOrientacion
 
     % Segun el error de distancia, podremos modelar la velocidad lineal que vamos a seguir de la siguiente manera:
-    if(abs(errorOrientacion)<0.5 ||a)
+    if(abs(errorOrientacion)<0.5 ||margen)
         if (abs(errorOrientacion)>1)
-            a =false;
+            margen =false;
         else
-            a =true;
+            margen =true;
         end
         velocidadAngular =0;
         velocidadLineal = Kpd * errorDistancia;
@@ -106,6 +106,10 @@ send(publisher, mensajeMovimiento);
 
 % Una vez detenemos el robot nos desconectamos de ROS
 rosshutdown;
+function estado =desplazar(x,y)
+
+    
+
 
 function E_ori_corregido = correctEori(E_ori)
     if E_ori <-pi
