@@ -1,4 +1,5 @@
 %% Conexion a ros
+clear;
 rosshutdown;
 setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
 setenv('ROS_IP','192.168.1.134') % IP de nuestro ordenador
@@ -7,6 +8,8 @@ rosinit;
 
 %% SUBSCRIBERS
 odometria = rossubscriber('/robot0/odom');
+laser = rossubscriber('/robot0/laser_1');
+
 %% PUBLISHERS
 publisher = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist'); %
 %% MENSAJE
@@ -19,67 +22,239 @@ pause(1);
 while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
  odom.LatestMessage
 end
+idList=[];
+pose=[0,0,0];%% X,Y,ori
 
-%% ALGORITMO DE CONTROL DE POSICION
+updateIdList(idList,1,1,2);
+updateIdList(idList,2,3,4);
+updateIdList(idList,3,6,7);
+disp(idList);
 
-% Pedimos al ususario las coordenadas de destino por teclado
-x_objetivo = input('Introduce la coordenada X de destino: ');
-y_objetivo = input('Introduce la coordenada Y de destino: ');
+listaParedes=detectarParedes(laser,pose(3));
+disp(searchCoords(idList,3,7));
 
-% Una vez cogidas coordenadas de destino, establecemos el punto de partida
+
+rosshutdown;
+function shortestPath=dijkstra(node,idList)
+    idList()
+    adjacentNodes=[node.down,node.right,node.up,node.left];
+    shortestPathList=[[],[],[],[]];
+    for i= 1,length(adjacentNodes)
+        if ~isempty(adjacentNodes(i))
+            if ~isVisited(adjacentNodes(i).id)|| ~isFinish(node)  
+                shortestPathList(i)=dijkstra(adjacentNodes(i),idList);
+            end
+        end
+    end
+
+    path=[];
+
+    for i=1:length(shortestPathList)
+        if ~isempty(shortestPathList(i))
+            if isempty(path)
+                path= shortestPath()
+       
+
+        end
+    
+
+end
+function paredesDetectadas=detectarParedes(laser,robotOri)
+    tolerancia = sqrt(2);
+    mensajeLaser = receive(laser, 1).Ranges;
+    listaLasers=[mensajeLaser(1),mensajeLaser(100),mensajeLaser(200),mensajeLaser(300)];%% trasero, derecho, frontal, izquierdo
+    paredesDetectadas=1:length(listaLasers);
+    for i= 1:length(listaLasers)
+        if listaLasers(i)>tolerancia
+            paredesDetectadas(i)=0;
+        else 
+            paredesDetectadas(i)=1;
+        end
+    end
+    paredesDetectadas=desplazarLista(paredesDetectadas,robotOri);
+end
+
+function paredes=desplazarLista(paredesDetectadas,robotOri)
+    oriObjetivo= mod(90-robotOri,360);%% se utiliza 90 para obtener la referencia con el robot mirando hacia arriba
+    numDesp =round(oriObjetivo/90);
+    paredes=paredesDetectadas;
+    if numDesp>0
+        for i=1:numDesp
+            paredes=[paredes(2:end),paredes(1)];
+        end
+    end
+end
+
+function newNode = createNode(id)
+    newNode.id = id;
+    newNode.left = [];
+    newNode.right = [];
+    newNode.up = [];
+    newNode.down = [];
+end
+
+function idList= updateIdList(idList, id, x, y)
+    visitado=0;
+    idList = [idList; id, x, y, visitado];
+end
+
+function [list, nodeList]= addNode(idList,listaParedes,x,y)
+    listaDesplazamientos=[[0,-2],[2,0],[0,2],[-2,0]];%%trasero, derecho, frontal, izquierdo
+    nodeList=1:length(listaParedes);
+
+    for i =1:length(listaParedes)
+
+        if listaParedes(i)==0
+           coords=[x+listaDesplazamientos(i,1),y+listaDesplazamientos(i,2)];%se establecen las coordenadas
+
+           if isempty(searchCoords(idList,coords(1),coords(2)))% si no están las coordenadas
+               nodeList(i)=createNode(newId(idList));  %se crea el nodo
+               idList=updateIdList(IdList,newId(IdList),coords(1),coords(2)); %se actualiza la lista
+           end
+        else
+            nodeList(i)=[];
+        end
+    end
+    list=idList;
+end
+
+function node= conectNode(actualNode,nodelist)
+
+    for i= 1:length(nodelist)
+     switch i
+        case 1  %trasero
+            nodelist(i).up = actualNode;
+            actualNode.down = nodelist(i);
+        case 2  %derecho
+            nodelist(i).left = actualNode;
+            actualNode.right = nodelist(i);
+        case 3  %frontal
+            nodelist(i).down = actualNode;
+            actualNode.up = nodelist(i);
+        case 4  %izquierdo
+            nodelist(i).right = actualNode;
+            actualNode.left = nodelist(i);
+        otherwise
+            error('Dirección no válida');
+    end
+
+    end
+    node=actualNode;
+end
+
+function caso =isFinish(node)
+    nodeList=[node.down,node.right,node.up,node.left];
+    caso=false;
+    for i=1:length(nodeList)
+        if isempty(nodeList(i))
+            caso=true;
+        end
+    end
+end
+    
+function caso= isVisited(id,idList)
+    if isempty(idList)
+        caso=[];
+    else
+    
+        idx = find(idList(:, 1) == id);
+        if isempty(idx)
+            caso = [];
+        else
+            if idList(idx, 1)==0
+                caso=false;
+            else 
+                caso=true;
+            end
+        end
+    end
+end
+
+function id = searchCoords(idList, x,y)
+    if isempty(idList)
+        id=[];
+    else
+        idx = find(idList(:, 2) == x & idList(:, end) == y);
+
+        if isempty(idx)
+          id = [];
+        else
+          id = idList(idx, 1);
+        end
+    end
+end
+
+function coords = searchId(idList, id)
+    if isempty(idList)
+        id=[];
+    else
+        idx = find(idList(:, 1) == id);
+        if isempty(idx) 
+            coords = [];
+        else
+            coords = idList(idx, 2:3); % Devuelve las coordenadas [x, y]
+        end
+    end
+end
+
+function id = newId(idList)
+id= length(idList);
+end
+
+function desplazar(x_objetivo,y_objetivo)
+odometria = rossubscriber('/robot0/odom');
+%% PUBLISHERS
+publisher = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist'); %
+%% MENSAJE
+mensajeMovimiento = rosmessage(publisher);
+robotRate = robotics.Rate(10);
+pause(1);
+
 tic
-
-% Inicializamos las variables del ALGORITMO
-errorIntegralDistancia =0;
-errorIntegralDistanciaAnterior=0;
-errorIntegralAngular =0;
-errorIntegralAngularAnterior=0;
+while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
+ odom.LatestMessage
+end
 margen = false;
 Kpa = 0.05; % Constante de proporcionalidad del control de la orientacion
-Kpd = 0.5; % Constante de proporcionalidad del control de la velocidad
-tolerancia = 1;
+Kpd = 0.75; % Constante de proporcionalidad del control de la velocidad
+tolerancia = 0.25;
 activo = true;
-
 while activo
     % Leemos la posición actual del robot
+
     x_actual = odometria.LatestMessage.Pose.Pose.Position.X;
     y_actual = odometria.LatestMessage.Pose.Pose.Position.Y;
 
     % Ahora haremos lo mismo pero con la posicion angular del robot
     posAngular = odometria.LatestMessage.Pose.Pose.Orientation;
     posicionAngularActual = [posAngular.W, posAngular.X, posAngular.Y, posAngular.Z];
-    [yaw, pitch, roll] = quat2angle(posicionAngularActual, 'ZYX');
+    [yaw, ~, ~] = quat2angle(posicionAngularActual, 'ZYX');
 
     % Calcuamos el error tanto de distancia como de objetivo
-
     errorDistancia = sqrt((x_objetivo - x_actual)^2 + (y_objetivo - y_actual)^2);
     errorOrientacion = atan2(y_objetivo - y_actual, x_objetivo - x_actual) - yaw;
-    errorOrientacion =correctEori(errorOrientacion);
+    errorOrientacion =corregirOrientacion(errorOrientacion);
     errorOrientacion = rad2deg(errorOrientacion);
-    errorOrientacion
 
     % Segun el error de distancia, podremos modelar la velocidad lineal que vamos a seguir de la siguiente manera:
     if(abs(errorOrientacion)<0.5 ||margen)
-        if (abs(errorOrientacion)>1)
+        if (abs(errorOrientacion)>0.25)
             margen =false;
         else
             margen =true;
         end
         velocidadAngular =0;
         velocidadLineal = Kpd * errorDistancia;
-        velocidadLineal = min(velocidadLineal, 1); % Limitamos la velocidad lineal a 0.5 como maximo
+        velocidadLineal = min(velocidadLineal, 1);
     else
         velocidadLineal =0;
-
         velocidadAngular = Kpa * errorOrientacion;
-        if velocidadAngular>0.5
-            velocidadAngular=0.5;
-        elseif velocidadAngular<-0.5
-            velocidadAngular=-0.5;
+        if velocidadAngular>1
+            velocidadAngular=1;
+        elseif velocidadAngular<-1
+            velocidadAngular=-1;
         end
-        %velocidadAngular = min(abs(velocidadAngular), 0.5); % Limitamos la velocidad angular a 1 como maximo
     end
-    % Hacemos lo mismo con el error de orientacion de la siguiente manera:
 
     % Ahora enviamos el comando de movimiento al robot:
     mensajeMovimiento.Linear.X = velocidadLineal;
@@ -103,15 +278,9 @@ end
 mensajeMovimiento.Linear.X = 0.0;
 mensajeMovimiento.Angular.Z = 0.0;
 send(publisher, mensajeMovimiento);
+end     
 
-% Una vez detenemos el robot nos desconectamos de ROS
-rosshutdown;
-function estado =desplazar(x,y)
-
-    
-
-
-function E_ori_corregido = correctEori(E_ori)
+function E_ori_corregido = corregirOrientacion(E_ori)
     if E_ori <-pi
         E_ori = E_ori + (2*pi);
     end
