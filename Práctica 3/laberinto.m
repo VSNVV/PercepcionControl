@@ -24,10 +24,12 @@ while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
 end
 
 idList=[];
+nodeList={};
 globalPose=getGlobalCoords(odometria);
 pose=[0,0,0];%% X,Y,ori
 shortestPath=[];
 nodeActual=createNode(idList);
+nodeList{end+1}=nodeActual;
 idList=updateIdList(idList,nodeActual.id,0,0);
 
 nodeToVisit=[];
@@ -37,35 +39,35 @@ idList=setVisited(idList,nodeActual.id,1);
 
 paredesDetectadas=detectarParedes(laser,pose(3));
 
-[idList,nodeList]=addNode(idList,paredesDetectadas,pose(1),pose(2));
+[idList,nodeWalls,nodeList]=addNode(idList,nodeList,paredesDetectadas,pose(1),pose(2));
 
-nodeActual=conectNode(nodeActual,nodeList);
+nodeList=conectNode(nodeActual,nodeWalls,nodeList);
 
-nodeToVisit=nextNode(idList,nodeActual);
+nodeToVisit=nextNode(idList,nodeActual.id,nodeList);
 
-disp("A")
 [xDes,yDes]=searchId(idList,nodeToVisit);
 
-
-shortestPath=dijkstra(nodeActual,resetIdList(idList),xDes,yDes);
+shortestPath=dijkstra(nodeActual.id,nodeList,resetIdList(idList),xDes,yDes);
 shortestPath
-[pose(1:2),pose(3),nodeActual]=travelPath(idList,shortestPath(2:end),pose(1),pose(2),nodeActual,odometria,publisher,globalPose);
+[pose(1:2),pose(3),nodeActual]=travelPath(idList,shortestPath(2:end),pose(1),pose(2),nodeActual.id,nodeList,odometria,publisher,globalPose);
 
 end
 
 rosshutdown;
 
-function shortestPath = dijkstra(node, idList, xDes, yDes)
-    id = node.id;
-    [x, y] = searchId(idList, id);
+function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
+    idList=setVisited(idList,nodeId,1);
+    node=nodeList{idxFromId(nodeList,nodeId)};
+    [x, y] = searchId(idList, nodeId);
     adjacentNodes = {node.down, node.right, node.up, node.left};
     shortestPathList = cell(1, length(adjacentNodes));  % Initialize as a cell array to handle paths of varying lengths
 
     for i = 1:size(adjacentNodes,2)
         if ~isempty(adjacentNodes{i})
-            adjNode = adjacentNodes{i};
-            if ~isVisited(idList, adjNode.id) && ~(x == xDes && y == yDes)
-                shortestPathList{i} = dijkstra(adjNode, idList, xDes, yDes);  % Recursive call
+            adjNodeId = adjacentNodes{i};
+            if ~isVisited(idList, adjNodeId) && ~(x == xDes && y == yDes)
+                idList=setVisited(idList,adjNodeId,1);
+                shortestPathList{i} = dijkstra(adjNodeId,nodeList, idList, xDes, yDes);  % Recursive call
             end
         end
     end
@@ -88,18 +90,19 @@ function shortestPath = dijkstra(node, idList, xDes, yDes)
         end
     end
 
-    shortestPath = [id, path];
+    shortestPath = [nodeId, path];
 end
 
-function [localCoords,yaw,node]= travelPath(idList,shortestPath,x,y,node,odometria,publisher,globalPose)
+function [localCoords,yaw,node]= travelPath(idList,shortestPath,x,y,nodeId,nodeList,odometria,publisher,globalPose)
 localCoords=[x,y];
 
     for i=1:length(shortestPath)
+        node=nodeList{idxFromId(nodeList,nodeId)};
         adjacentNodes = {node.down, node.right, node.up, node.left};
         for j=1:size(adjacentNodes,2)
             if ~isempty(adjacentNodes{j})
-                if adjacentNodes{j}.id==shortestPath(i)
-                   node=adjacentNodes{j};
+                if adjacentNodes{j}==shortestPath(i)
+                   node=nodeList{idxFromId(nodeList,adjacentNodes{j})};
                 end
             end
         end
@@ -112,12 +115,13 @@ localCoords=[x,y];
     
 end
 
-function nodeToVisit=nextNode(idList,node)
-    nodeList=[node.down,node.right,node.up,node.left];
+function nodeToVisit=nextNode(idList,nodeid,nodeList)
+    node=nodeList{idxFromId(nodeList,nodeid)};
+    nodeIdList=[node.down,node.right,node.up,node.left];
     nodeToVisit=[];
-    for i=1:length(nodeList)
-        if ~isVisited(idList,nodeList(i).id)
-            nodeToVisit=nodeList(i).id;
+    for i=1:length(nodeIdList)
+        if ~isVisited(idList,nodeIdList(i))
+            nodeToVisit=nodeIdList(i);
         end
     end
     if isempty(nodeToVisit)
@@ -177,9 +181,9 @@ function list= resetIdList(idList)
     list=idList;
 end
 
-function [list, nodeList] = addNode(idList, listaParedes, x, y)
+function [list, nodeWalls,nodeList] = addNode(idList,nodeList, listaParedes, x, y)
     listaDesplazamientos = [0, -2; 2, 0; 0, 2; -2, 0]; %% trasero, derecho, frontal, izquierdo
-    nodeList = cell(1, length(listaParedes)); % Inicializa nodeList como un cell array
+    nodeWalls = cell(1, length(listaParedes)); % Inicializa nodeList como un cell array
     if all(listaParedes == 0)
        id= searchCoords(idList,x,y);
        idx = find(idList(:, 1) == id);
@@ -192,8 +196,9 @@ function [list, nodeList] = addNode(idList, listaParedes, x, y)
                 
                 if isempty(searchCoords(idList, xDest, yDest)) % Si no están las coordenadas
                     newNode = createNode(idList);  % Crea el nodo
+                    nodeList{end+1}=newNode;
                     idList = updateIdList(idList, newNode.id, xDest, yDest); % Actualiza la lista
-                    nodeList{i} = newNode; % Actualiza nodeList con el nuevo nodo
+                    nodeWalls{i} = newNode; % Actualiza nodeList con el nuevo nodo
                 else
                     
                 end
@@ -204,37 +209,30 @@ function [list, nodeList] = addNode(idList, listaParedes, x, y)
     end
     list = idList;
 end
-function node= conectNode(actualNode,nodelist)
 
-    for i= 1:length(nodelist)
-        if ~isempty(nodelist{i})
+function nodeList= conectNode(actualNode,nodeWalls,nodeList)
+    idxActual=idxFromId(nodeList,actualNode.id);
+    for i= 1:length(nodeWalls)
+        if ~isempty(nodeWalls{i})
+            idxWall=idxFromId(nodeList,nodeWalls{i}.id);
          switch i
             case 1  %trasero
-                nodelist{i}.up = actualNode;
-                actualNode.down = nodelist{i};
-                nodelist{i}.up = actualNode;
-                actualNode.down = nodelist{i};
+                nodeList{idxActual}.down=nodeWalls{i}.id;
+                nodeList{idxWall}.up= actualNode.id;
             case 2  %derecho
-                nodelist{i}.left = actualNode;
-                actualNode.right = nodelist{i};
-                nodelist{i}.left = actualNode;
-                actualNode.right = nodelist{i};
+                nodeList{idxActual}.right = nodeWalls{i}.id;
+                nodeList{idxWall}.left= actualNode.id;
             case 3  %frontal
-                nodelist{i}.down = actualNode;
-                actualNode.up = nodelist{i};
-                nodelist{i}.down = actualNode;
-                actualNode.up = nodelist{i};                
+                nodeList{idxActual}.up = nodeWalls{i}.id;
+                nodeList{idxWall}.down= actualNode.id;
             case 4  %izquierdo
-                nodelist{i}.right = actualNode;
-                actualNode.left = nodelist{i};
-                nodelist{i}.right = actualNode;
-                actualNode.left = nodelist{i};                
+                nodeList{idxActual}.left = nodeWalls{i}.id;    
+                nodeList{idxWall}.right= actualNode.id;
             otherwise
                 error('Dirección no válida');
           end
         end
     end
-    node=actualNode;
 end
 
 function caso =isFinish(node)
@@ -246,13 +244,22 @@ function caso =isFinish(node)
         end
     end
 end
-    
+
+function idx = idxFromId(nodelist, id)
+    idx = [];
+    for i = 1:length(nodelist)
+        if nodelist{i}.id == id
+            idx = i;
+            return; % Salir de la función una vez encontrado el id
+        end
+    end
+end
 function caso = isVisited(idList, id)
     idx = find(idList(:, 1) == id); % Encuentra las filas donde el primer elemento es igual a id
     if isempty(idx)
         caso = [];
     else
-        if idList(idx, end) == 0
+        if idList(idx, 4) == 0
             caso = false;
         else
             caso = true;
