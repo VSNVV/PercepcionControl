@@ -24,7 +24,7 @@ while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
 end
 
 idList=[];
-globalPose=getGlobalCoords(odometria)
+globalPose=getGlobalCoords(odometria);
 pose=[0,0,0];%% X,Y,ori
 shortestPath=[];
 nodeActual=createNode(idList);
@@ -48,111 +48,68 @@ disp("A")
 
 
 shortestPath=dijkstra(nodeActual,resetIdList(idList),xDes,yDes);
-
-pose(1:2)=travelPath(idList,shortestPath,pose(1),pose(2),odometria,publisher);
+shortestPath
+[pose(1:2),pose(3),nodeActual]=travelPath(idList,shortestPath(2:end),pose(1),pose(2),nodeActual,odometria,publisher,globalPose);
 
 end
 
 rosshutdown;
+
 function shortestPath = dijkstra(node, idList, xDes, yDes)
-    % Initialize the distances and previous nodes
-    numNodes = length(idList);
-    dist = inf(1, numNodes);
-    prev = NaN(1, numNodes);
-    visited = false(1, numNodes);
+    id = node.id;
+    [x, y] = searchId(idList, id);
+    adjacentNodes = {node.down, node.right, node.up, node.left};
+    shortestPathList = cell(1, length(adjacentNodes));  % Initialize as a cell array to handle paths of varying lengths
 
-    % Initialize the distance for the start node
-    startIdx = findIndex(idList,node.id);
-    dist(startIdx) = 0;
-
-    while any(~visited)
-        % Find the unvisited node with the smallest distance
-        [~, currentIdx] = min(dist .* (~visited));
-        
-        % Mark the node as visited
-        visited(currentIdx) = true;
-
-        % If the destination is reached, stop the search
-        if currentIdx == searchCoords(idList, xDes, yDes)
-            break;
+    for i = 1:size(adjacentNodes,2)
+        if ~isempty(adjacentNodes{i})
+            adjNode = adjacentNodes{i};
+            if ~isVisited(idList, adjNode.id) && ~(x == xDes && y == yDes)
+                shortestPathList{i} = dijkstra(adjNode, idList, xDes, yDes);  % Recursive call
+            end
         end
+    end
 
-        % Get the adjacent nodes
-        adjacentNodes = [idList(currentIdx).down, idList(currentIdx).right, idList(currentIdx).up, idList(currentIdx).left];
+    % Initialize the path as an empty array
+    path = [];
 
-        % Update the distances for adjacent nodes
-        for i = 1:length(adjacentNodes)
-            adjNode = adjacentNodes(i);
-            if ~isempty(adjNode)
-                adjIdx = adjNode;
-                if ~visited(adjIdx)
-                    newDist = dist(currentIdx) + 1; % Assuming each edge has a weight of 1
-                    if newDist < dist(adjIdx)
-                        dist(adjIdx) = newDist;
-                        prev(adjIdx) = currentIdx;
+    % Select the shortest path from the list of paths
+    for i = 1:length(shortestPathList)
+        if ~isempty(shortestPathList{i})
+            if shortestPathList{i}(end)==searchCoords(idList,xDes,yDes)
+                if isempty(path)
+                    path=shortestPathList{i};
+                else
+                    if length(shortestPathList{i})<length(path)
+                        path=shortestPathList{i};
                     end
                 end
             end
         end
     end
 
-    % Construct the shortest path
-    shortestPath = [];
-    currentIdx = searchCoords(idList, xDes, yDes);
-    while ~isnan(currentIdx)
-        shortestPath = [currentIdx, shortestPath];
-        currentIdx = prev(currentIdx);
-    end
+    shortestPath = [id, path];
 end
 
-
-function idx = findIndex(idList, id)
-    idx = find(idList(:,1)==id);
-end
-
-% function shortestPath = dijkstra(node, idList, xDes, yDes)
-%     id = node.id;
-%     [x, y] = searchId(idList, id);
-%     adjacentNodes = [node.down, node.right, node.up, node.left];
-%     shortestPathList = {1:4};  % Initialize as a cell array to handle paths of varying lengths
-% 
-%     for i = 1:length(adjacentNodes)
-%         if ~isempty(adjacentNodes(i))
-%             adjNode = adjacentNodes(i);
-%             if ~isVisited(idList, adjNode.id) && ~(x == xDes && y == yDes)
-%                 shortestPathList{i} = dijkstra(adjNode, idList, xDes, yDes);  % Recursive call
-%             end
-%         end
-%     end
-% 
-%     % Initialize the path as an empty array
-%     path = [];
-% 
-%     % Select the shortest path from the list of paths
-%     for i = 1:length(shortestPathList)
-%         if ~isempty(shortestPathList{i})
-%             if isempty(path)
-%                 path = shortestPathList{i};
-%             elseif length(shortestPathList{i}) < length(path)
-%                 path = shortestPathList{i};
-%             end
-%         end
-%     end
-% 
-%     shortestPath = [id, path];
-% end
-% 
-function localCoords= travelPath(idList,shortestPath,x,y,odometria,publisher)
+function [localCoords,yaw,node]= travelPath(idList,shortestPath,x,y,node,odometria,publisher,globalPose)
 localCoords=[x,y];
 
     for i=1:length(shortestPath)
-        
-        [xDest,yDest]=searchId(idList,shortestPath(i))    
+        adjacentNodes = {node.down, node.right, node.up, node.left};
+        for j=1:size(adjacentNodes,2)
+            if ~isempty(adjacentNodes{j})
+                if adjacentNodes{j}.id==shortestPath(i)
+                   node=adjacentNodes{j};
+                end
+            end
+        end
+        [xDest,yDest]=searchId(idList,shortestPath(i));    
         destinyCoords=[xDest,yDest];
-        mover(localCoords,destinyCoords,odometria,publisher);
+        yaw=mover(localCoords,destinyCoords,odometria,publisher,globalPose);
         localCoords=destinyCoords;
 
     end
+    
 end
 
 function nodeToVisit=nextNode(idList,node)
@@ -160,7 +117,7 @@ function nodeToVisit=nextNode(idList,node)
     nodeToVisit=[];
     for i=1:length(nodeList)
         if ~isVisited(idList,nodeList(i).id)
-            nodeToVisit=nodeList(i);
+            nodeToVisit=nodeList(i).id;
         end
     end
     if isempty(nodeToVisit)
@@ -212,8 +169,9 @@ function list= updateIdList(idList, id, x, y)
 end
 
 function list= resetIdList(idList)
-    for i=1:length(idList)
+    for i=1:size(idList,1)
         idList(i,4)=0;
+        idList(i,5)=0;
     end
 
     list=idList;
@@ -222,26 +180,30 @@ end
 function [list, nodeList] = addNode(idList, listaParedes, x, y)
     listaDesplazamientos = [0, -2; 2, 0; 0, 2; -2, 0]; %% trasero, derecho, frontal, izquierdo
     nodeList = cell(1, length(listaParedes)); % Inicializa nodeList como un cell array
-
-    for i = 1:length(listaParedes)
-        if listaParedes(i) == 0
-            xDest = x + listaDesplazamientos(i, 1); 
-            yDest = y + listaDesplazamientos(i, 2);
-            
-            if isempty(searchCoords(idList, xDest, yDest)) % Si no están las coordenadas
-                newNode = createNode(idList);  % Crea el nodo
-                idList = updateIdList(idList, newNode.id, xDest, yDest); % Actualiza la lista
-                nodeList{i} = newNode; % Actualiza nodeList con el nuevo nodo
-            else
+    if all(listaParedes == 0)
+       id= searchCoords(idList,x,y);
+       idx = find(idList(:, 1) == id);
+       idList(idx,5)=-1;
+    else
+        for i = 1:length(listaParedes)
+            if listaParedes(i) == 0
+                xDest = x + listaDesplazamientos(i, 1); 
+                yDest = y + listaDesplazamientos(i, 2);
                 
+                if isempty(searchCoords(idList, xDest, yDest)) % Si no están las coordenadas
+                    newNode = createNode(idList);  % Crea el nodo
+                    idList = updateIdList(idList, newNode.id, xDest, yDest); % Actualiza la lista
+                    nodeList{i} = newNode; % Actualiza nodeList con el nuevo nodo
+                else
+                    
+                end
+            else
+               
             end
-        else
-            nodeList{i} = []; % Agrega un array vacío para mantener el índice
         end
     end
     list = idList;
 end
-
 function node= conectNode(actualNode,nodelist)
 
     for i= 1:length(nodelist)
@@ -250,15 +212,23 @@ function node= conectNode(actualNode,nodelist)
             case 1  %trasero
                 nodelist{i}.up = actualNode;
                 actualNode.down = nodelist{i};
+                nodelist{i}.up = actualNode;
+                actualNode.down = nodelist{i};
             case 2  %derecho
+                nodelist{i}.left = actualNode;
+                actualNode.right = nodelist{i};
                 nodelist{i}.left = actualNode;
                 actualNode.right = nodelist{i};
             case 3  %frontal
                 nodelist{i}.down = actualNode;
                 actualNode.up = nodelist{i};
+                nodelist{i}.down = actualNode;
+                actualNode.up = nodelist{i};                
             case 4  %izquierdo
                 nodelist{i}.right = actualNode;
                 actualNode.left = nodelist{i};
+                nodelist{i}.right = actualNode;
+                actualNode.left = nodelist{i};                
             otherwise
                 error('Dirección no válida');
           end
@@ -282,7 +252,7 @@ function caso = isVisited(idList, id)
     if isempty(idx)
         caso = [];
     else
-        if idList(idx, 1) == 0
+        if idList(idx, end) == 0
             caso = false;
         else
             caso = true;
@@ -332,7 +302,7 @@ id= size(idList,1);
 
 end
 
-function avanzar(distancia,odometria,publisher)
+function avanzar(distancia,odometria,publisher,localPos,globalPos)
 
 
     mensajeMovimiento = rosmessage(publisher);
@@ -344,11 +314,11 @@ function avanzar(distancia,odometria,publisher)
 
     distanciaRecorrida = 0;
     % Ahora tendremos que pasar nuestras coordenadas locales conocidas a globales para medir el incremento de posicion
-    posicionInicial = local2Global([0,0], [13,3]); % Aqui tienes que poner el getter de las coordenadas actuales locales y las iniciales globales respectivamente
+    posicionInicial = local2Global(localPos, globalPos); % Aqui tienes que poner el getter de las coordenadas actuales locales y las iniciales globales respectivamente
     disp(posicionInicial);
     Kp = 3;
     
-    while (not(distancia - 0.00001 <= distanciaRecorrida) && (distanciaRecorrida <= distancia + 0.00001))
+    while (not(distancia - 0.01 <= distanciaRecorrida) && (distanciaRecorrida <= distancia + 0.01))
         % Leemos nuestra posición actuale
         posicionActual = odometria.LatestMessage.Pose.Pose.Position;
         disp(posicionActual);
@@ -375,7 +345,7 @@ function girar(angulo,odometria,publisher)
     activo = true;
     iteracion = 0;
     sentidoHorario = false;
-    Kp = 2;
+    Kp = 1.8;
 
     while (activo)
         posicionActual = odometria.LatestMessage.Pose.Pose.Orientation;
@@ -429,13 +399,13 @@ function coordenadas_globales = local2Global(coordenadas_locales, origen_global)
 end
 
 %% FUNCION PARA MOVERNOS A UNA COORDENADA LOCAL
-function mover(coords_locales_actuales, coords_locales_destino,odometria,publisher)
+function orientacion= mover(coords_locales_actuales, coords_locales_destino,odometria,publisher,globalPos)
     % Tenemos las coordenadas locales hacia donde queremos ir, por tanto, nos orientaremos hacia donde queremos ir
     orientacion = calcularOrientacion(coords_locales_actuales, coords_locales_destino); % Aqui tienes que poner el getter de las coords actuales en coords_locales_actuales
     % Una vez que tengamos la orientacion, giramos hacia ella
     girar(orientacion,odometria,publisher);
     % Una vez que estemos ya orientados hacia el punto, simplemente avanzamos los 2 metros que equidistan de todas las casillas
-    avanzar(2,odometria,publisher);
+    avanzar(2,odometria,publisher,coords_locales_actuales,globalPos);
 end
 
 function angulo = calcularOrientacion(coords_locales_origen, coords_locales_destino)
