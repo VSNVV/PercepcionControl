@@ -1,8 +1,8 @@
 %% Conexion a ros
 clear;
 rosshutdown;
-setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.129') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://192.168.1.152:11311') % IP de la MV
+setenv('ROS_IP','192.168.1.133') % IP de nuestro ordenador
 rosinit;
 
 
@@ -351,17 +351,20 @@ end
 
 %% FUNCION PARA GIRAR
 function girar(angulo,odometria,publisher)
-
     % MENSAJE
     mensajeMovimiento = rosmessage(publisher);
 
-    
+    pause(1);
+
+    while(strcmp(odometria.LatestMessage.ChildFrameId,'robot0') ~= 1)
+        odom.LatestMessage
+    end
 
     % VARIABLES NECESARIAS
     activo = true;
     iteracion = 0;
     sentidoHorario = false;
-    Kp = 1.8;
+    Kp = 2;
 
     while (activo)
         posicionActual = odometria.LatestMessage.Pose.Pose.Orientation;
@@ -369,28 +372,32 @@ function girar(angulo,odometria,publisher)
         yaw = quat2angle(posicionAngular, 'ZYX');
         yaw = round(yaw, 4); % Acotamos a 4 decimales el resultado
         disp(['Yaw (radianes): ', num2str(yaw)]);
+        
         if(iteracion == 0)
-            % Ahora convertimos estos grados a los radianes del robot
+            % Convertir el ángulo a radianes del robot
             radianesFinal = getRadianes(mod(angulo, 360));
-            % Ahora tenemos que ver el sentido en el que giramos
-            if(mod(round(rad2deg(yaw)) + 90, 360) == angulo)
-                sentidoHorario = false;
-            elseif(mod(round(rad2deg(yaw)) - 90, 360) == angulo)
-                sentidoHorario = true;
-            else
-                sentidoHorario = false;
-            end
+            % Determinar el sentido de giro
+            sentidoHorario = mod((rad2deg(radianesFinal) - rad2deg(yaw) + 360), 360) > 180;
             iteracion = iteracion + 1;
         end
-        controlGiro = min(Kp * abs(radianesFinal - yaw), 1); % Acotamos la velocidad maxima de giro a 1
+
+        % Control de giro
+        error = radianesFinal - yaw;
+        % Ajustar el error para que esté en el intervalo [-pi, pi]
+        error = wrapToPi(error);
+        
+        controlGiro = min(Kp * abs(error), 1); % Acotamos la velocidad máxima de giro a 1
         mensajeMovimiento.Angular.Z = controlGiro;
         mensajeMovimiento.Linear.X = 0;
+        
         if(sentidoHorario)
-            mensajeMovimiento.Angular.Z = mensajeMovimiento.Angular.Z * -1;
+            mensajeMovimiento.Angular.Z = -controlGiro;
         end
+        
         send(publisher, mensajeMovimiento);
 
-        if((radianesFinal - 0.01 <= yaw) && (yaw <= radianesFinal + 0.01))
+        % Condicion de parada
+        if abs(error) < 0.001
             activo = false;
             mensajeMovimiento.Angular.Z = 0.0;
             send(publisher, mensajeMovimiento);
@@ -401,12 +408,11 @@ end
 
 %% FUNCION PARA CONVERTIR A RADIANES EL ANGULO DE ENTRADA
 function radianes = getRadianes(angulo)
-    if((0 <= angulo) && (angulo <= 180))
-        radianes = round(deg2rad(angulo), 4);
-    else
-        radianes = round(deg2rad(angulo - 360), 4);
-    end
-
+ if((0 <= angulo) && (angulo <= 180))
+     radianes = round(deg2rad(angulo), 4);
+ else
+     radianes = round(deg2rad(angulo - 360), 4);
+ end
 end
 
 %% FUNCION QUE CONVIERTE COORDENADAS LOCALES EN GLOBALES
