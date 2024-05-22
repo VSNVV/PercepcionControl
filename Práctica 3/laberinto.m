@@ -31,29 +31,38 @@ shortestPath=[];
 nodeActual=createNode(idList);
 nodeList{end+1}=nodeActual;
 idList=updateIdList(idList,nodeActual.id,0,0);
-
+explorado=false
 nodeToVisit=[];
 
-while(true)
-idList=setVisited(idList,nodeActual.id,1);
-
-paredesDetectadas=detectarParedes(laser,pose(3));
-
-[idList,nodeWalls,nodeList]=addNode(idList,nodeList,paredesDetectadas,pose(1),pose(2));
-
-nodeList=conectNode(nodeActual,nodeWalls,nodeList);
-
-nodeToVisit=nextNode(idList,nodeActual.id,nodeList);
-
-[xDes,yDes]=searchId(idList,nodeToVisit);
-
-shortestPath=dijkstra(nodeActual.id,nodeList,resetIdList(idList),xDes,yDes);
-shortestPath
-[pose(1:2),pose(3),nodeActual]=travelPath(idList,shortestPath(2:end),pose(1),pose(2),nodeActual.id,nodeList,odometria,publisher,globalPose);
-
+while(~explorado)
+    idList=setVisited(idList,nodeActual.id,1);
+    
+    paredesDetectadas=detectarParedes(laser,pose(3));
+    
+    [idList,nodeWalls,nodeList]=addNode(idList,nodeList,paredesDetectadas,pose(1),pose(2));
+    
+    nodeList=conectNode(nodeActual,nodeWalls,nodeList);
+    
+    nodeToVisit=nextNode(idList,nodeActual.id,nodeList);
+    if isempty(nodeToVisit)
+        explorado=true;
+        [xDes,yDes]=searchEnd(idList);
+    else
+        [xDes,yDes]=searchId(idList,nodeToVisit);
+    end  
+        shortestPath=dijkstra(nodeActual.id,nodeList,resetIdList(idList),xDes,yDes);
+        
+        [pose(1:2),pose(3),nodeActual]=travelPath(idList,shortestPath(2:end),pose(1),pose(2),nodeActual.id,nodeList,odometria,publisher,globalPose);
+    
 end
 
 rosshutdown;
+
+function [xFin,yFin]= searchEnd(idList)
+    idx=find(idList(:,5)==1);
+    xFin=idList(idx,2);
+    yFin=idList(idx,3);
+end
 
 function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
     idList=setVisited(idList,nodeId,1);
@@ -95,9 +104,8 @@ end
 
 function [localCoords,yaw,node]= travelPath(idList,shortestPath,x,y,nodeId,nodeList,odometria,publisher,globalPose)
 localCoords=[x,y];
-
+node=nodeList{idxFromId(nodeList,nodeId)};
     for i=1:length(shortestPath)
-        node=nodeList{idxFromId(nodeList,nodeId)};
         adjacentNodes = {node.down, node.right, node.up, node.left};
         for j=1:size(adjacentNodes,2)
             if ~isempty(adjacentNodes{j})
@@ -112,7 +120,7 @@ localCoords=[x,y];
         localCoords=destinyCoords;
 
     end
-    
+   
 end
 
 function nodeToVisit=nextNode(idList,nodeid,nodeList)
@@ -126,7 +134,7 @@ function nodeToVisit=nextNode(idList,nodeid,nodeList)
     end
     if isempty(nodeToVisit)
         for i=1:size(idList)
-            if idList(i,end)==0
+            if idList(i,4)==0
                 nodeToVisit=idList(i);
             end
         end
@@ -169,7 +177,8 @@ end
 
 function list= updateIdList(idList, id, x, y)
     visitado=0;
-    list = [idList; id, x, y, visitado];
+    final=0;
+    list = [idList; id, x, y, visitado,final];
 end
 
 function list= resetIdList(idList)
@@ -187,7 +196,7 @@ function [list, nodeWalls,nodeList] = addNode(idList,nodeList, listaParedes, x, 
     if all(listaParedes == 0)
        id= searchCoords(idList,x,y);
        idx = find(idList(:, 1) == id);
-       idList(idx,5)=-1;
+       idList(idx,5)=1;
     else
         for i = 1:length(listaParedes)
             if listaParedes(i) == 0
