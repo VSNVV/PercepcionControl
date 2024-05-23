@@ -5,7 +5,6 @@ setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
 setenv('ROS_IP','192.168.1.129') % IP de nuestro ordenador
 rosinit;
 
-
 %% SUBSCRIBERS
 odometria = rossubscriber('/robot0/odom');
 laser = rossubscriber('/robot0/laser_1');
@@ -17,7 +16,6 @@ mensajeMovimiento = rosmessage(publisher);
 
 robotRate = robotics.Rate(10);
 pause(1);
-
 
 while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
  odom.LatestMessage
@@ -82,10 +80,8 @@ function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
         end
     end
 
-    % Initialize the path as an empty array
     path = [];
 
-    % Select the shortest path from the list of paths
     for i = 1:length(shortestPathList)
         if ~isempty(shortestPathList{i})
             if shortestPathList{i}(end)==searchCoords(idList,xDes,yDes)
@@ -146,7 +142,6 @@ function optPath= optimizePath(idList,path)
 
     optPath(end+1)=path(end);
     end
- 
 
 function nodeToVisit=nextNode(idList,nodeid,nodeList)
     node=nodeList{idxFromId(nodeList,nodeid)};
@@ -217,7 +212,7 @@ end
 
 function [list, nodeWalls,nodeList] = addNode(idList,nodeList, listaParedes, x, y)
     listaDesplazamientos = [0, -2; 2, 0; 0, 2; -2, 0]; %% trasero, derecho, frontal, izquierdo
-    nodeWalls = cell(1, length(listaParedes)); % Inicializa nodeList como un cell array
+    nodeWalls = cell(1, length(listaParedes));
     if all(listaParedes == 0)
        id= searchCoords(idList,x,y);
        idx = find(idList(:, 1) == id);
@@ -228,11 +223,11 @@ function [list, nodeWalls,nodeList] = addNode(idList,nodeList, listaParedes, x, 
                 xDest = x + listaDesplazamientos(i, 1); 
                 yDest = y + listaDesplazamientos(i, 2);
                 
-                if isempty(searchCoords(idList, xDest, yDest)) % Si no están las coordenadas
-                    newNode = createNode(idList);  % Crea el nodo
+                if isempty(searchCoords(idList, xDest, yDest)) 
+                    newNode = createNode(idList);  
                     nodeList{end+1}=newNode;
-                    idList = updateIdList(idList, newNode.id, xDest, yDest); % Actualiza la lista
-                    nodeWalls{i} = newNode; % Actualiza nodeList con el nuevo nodo
+                    idList = updateIdList(idList, newNode.id, xDest, yDest); 
+                    nodeWalls{i} = newNode; 
                 else
                     
                 end
@@ -274,12 +269,13 @@ function idx = idxFromId(nodelist, id)
     for i = 1:length(nodelist)
         if nodelist{i}.id == id
             idx = i;
-            return; % Salir de la función una vez encontrado el id
+            return; 
         end
     end
 end
+
 function caso = isVisited(idList, id)
-    idx = find(idList(:, 1) == id); % Encuentra las filas donde el primer elemento es igual a id
+    idx = find(idList(:, 1) == id); 
     if isempty(idx)
         caso = [];
     else

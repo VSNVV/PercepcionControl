@@ -142,7 +142,6 @@ function [x,y] = searchId(idList, id)
     end
 end
 
-
 function id = searchCoords(idList, x,y)
 
     if isempty(idList)
@@ -188,7 +187,6 @@ function caso = isVisited(idList, id)
         end
     end
 end
-
 
 function avanzar(distancia,odometria,publisher,localPos,globalPos)
 
@@ -332,10 +330,4 @@ function angulo = calcularOrientacion(coords_locales_origen, coords_locales_dest
     if (angulo < 0)
         angulo = angulo + 360;
     end
-end
-
-function pose = getGlobalCoords(odometria)
-
-pos=odometria.LatestMessage.Pose.Pose.Position;
-pose=[pos.X,pos.Y];
 end
