@@ -32,7 +32,7 @@ idList=updateIdList(idList,nodeActual.id,0,0);
 explorado=false;
 nodeToVisit=[];
 optimizedPath=[];
-
+tic;
 while(~explorado)
     idList=setVisited(idList,nodeActual.id,1);
     
@@ -58,7 +58,8 @@ while(~explorado)
     end
     
 end
-
+a=toc;
+disp(a);
 
 rosshutdown;
 
@@ -375,7 +376,7 @@ function girar(angulo,odometria,publisher)
     activo = true;
     iteracion = 0;
     sentidoHorario = false;
-    Kp = 10;
+    Kp = 7;
 
     while (activo)
         posicionActual = odometria.LatestMessage.Pose.Pose.Orientation;
