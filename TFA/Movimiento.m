@@ -1,9 +1,8 @@
 %% CONEXION A ROS
-setenv('ROS_MASTER_URI','http://192.168.1.134:11311') % IP de la MV
-setenv('ROS_IP','192.168.1.133') % IP de nuestro ordenador
+setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
+setenv('ROS_IP','192.168.1.129') % IP de nuestro ordenador
 
 %% EJECUCION DEL CODIGO
-mover([0,0], [0,2]);
 %avanzar(2);
 
 

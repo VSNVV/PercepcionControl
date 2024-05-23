@@ -1,5 +1,5 @@
 %% Conexion a ros
-
+clear;
 rosshutdown;
 setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
 setenv('ROS_IP','192.168.1.129') % IP de nuestro ordenador
@@ -31,21 +31,10 @@ shortestPath=[];
 nodeActual=createNode(idList);
 nodeList{end+1}=nodeActual;
 idList=updateIdList(idList,nodeActual.id,0,0);
-explorado=false
+explorado=false;
 nodeToVisit=[];
 optimizedPath=[];
 
-if(explorado)
-    [xDes,yDes]=searchEnd(idList);
-    
-    shortestPath=dijkstra(nodeActual.id,nodeList,resetIdList(idList),xDes,yDes);
-    
-    optimizedPath=optimizePath(idList,shortestPath);
-    
-    [pose(1:2),pose(3),nodeActual]=travelPath(idList,optimizedPath,pose(1),pose(2),nodeList,odometria,publisher,globalPose);
-    explorado=false;
-   
-end
 while(~explorado)
     idList=setVisited(idList,nodeActual.id,1);
     
@@ -75,11 +64,6 @@ end
 
 rosshutdown;
 
-function [xFin,yFin]= searchEnd(idList)
-    idx=find(idList(:,5)==1);
-    xFin=idList(idx,2);
-    yFin=idList(idx,3);
-end
 
 function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
     idList=setVisited(idList,nodeId,1);
@@ -119,27 +103,6 @@ function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
     shortestPath = [nodeId, path];
 end
 
-% function [localCoords,yaw,node]= travelPath(idList,shortestPath,x,y,nodeId,nodeList,odometria,publisher,globalPose)
-% localCoords=[x,y];
-% 
-% node=nodeList{idxFromId(nodeList,nodeId)};
-%     for i=1:length(shortestPath)
-%         adjacentNodes = {node.down, node.right, node.up, node.left};
-%         for j=1:size(adjacentNodes,2)
-%             if ~isempty(adjacentNodes{j})
-%                 if adjacentNodes{j}==shortestPath(i)
-%                    node=nodeList{idxFromId(nodeList,adjacentNodes{j})};
-%                 end
-%             end
-%         end
-%         [xDest,yDest]=searchId(idList,shortestPath(i));    
-%         destinyCoords=[xDest,yDest];
-%         yaw=mover(localCoords,destinyCoords,odometria,publisher,globalPose);
-%         localCoords=destinyCoords;
-% 
-%     end
-%    
-% end
 function [localCoords,yaw,node]= travelPath(idList,shortestPath,x,y,nodeList,odometria,publisher,globalPose)
 localCoords=[x,y];
 yaw=[];
@@ -155,6 +118,7 @@ node=nodeList{idxFromId(nodeList,shortestPath(1))};
     end
   
 end
+
 function optPath= optimizePath(idList,path)
 
     anguloAnterior=NaN;
@@ -172,7 +136,7 @@ function optPath= optimizePath(idList,path)
         anguloAct= calcularOrientacion(coordIni,coordSig);
         if ~isnan(anguloAnterior)
             if ~(anguloAnterior==anguloAct)
-                optPath(end+1)=path(i-114);
+                optPath(end+1)=path(i-1);
             
             end
         end
@@ -182,36 +146,7 @@ function optPath= optimizePath(idList,path)
 
     optPath(end+1)=path(end);
     end
-% function optimizedPath = optimizePath(idList, path)
-%     % Inicializar el array optimizado con el primer nodo del camino
-%     optimizedPath=[];
-%     
-%     if length(path) > 2
-%         % Recorrer el camino desde el segundo hasta el penúltimo nodo
-%         for i = 3:length(path)-1
-%             % Obtener las coordenadas del nodo anterior, actual y siguiente
-%             [xPrev, yPrev] = searchId(idList, path(i-1));
-%             [xAct, yAct] = searchId(idList, path(i));
-%             [xNext, yNext] = searchId(idList, path(i+1));
-%             
-%             % Calcular la diferencia de coordenadas
-%             diffPrevX = xAct - xPrev;
-%             diffPrevY = yAct - yPrev;
-%             diffNextX = xNext - xAct;
-%             diffNextY = yNext - yAct;
-%             
-%             % Verificar si el nodo actual es redundante
-%             % Un nodo es redundante si ambos deltas previos y siguientes son 0 en un eje
-%             if ~(diffPrevX == 0 && diffNextX == 0) && ~(diffPrevY == 0 && diffNextY == 0)
-%                 optimizedPath(end+1) = path(i);
-%             end
-%         end
-%     end
-%     
-%     % Añadir el último nodo del camino
-%     optimizedPath(end+1) = path(end);
-% end
-    
+ 
 
 function nodeToVisit=nextNode(idList,nodeid,nodeList)
     node=nodeList{idxFromId(nodeList,nodeid)};
@@ -334,16 +269,6 @@ function nodeList= conectNode(actualNode,nodeWalls,nodeList)
     end
 end
 
-function caso =isFinish(node)
-    nodeList=[node.down,node.right,node.up,node.left];
-    caso=false;
-    for i=1:length(nodeList)
-        if isempty(nodeList(i))
-            caso=true;
-        end
-    end
-end
-
 function idx = idxFromId(nodelist, id)
     idx = [];
     for i = 1:length(nodelist)
@@ -422,17 +347,17 @@ function avanzar(distancia,odometria,publisher,localPos,globalPos)
     % Ahora tendremos que pasar nuestras coordenadas locales conocidas a globales para medir el incremento de posicion
     posicionInicial = local2Global(localPos, globalPos); % Aqui tienes que poner el getter de las coordenadas actuales locales y las iniciales globales respectivamente
     disp(posicionInicial);
-    Kp = 3;
+    Kp = 10;
     
-    while (not(distancia - 0.01 <= distanciaRecorrida) && (distanciaRecorrida <= distancia + 0.01))
+    while (not(distancia - 0.1 <= distanciaRecorrida) && (distanciaRecorrida <= distancia + 0.1))
         % Leemos nuestra posición actuale
         posicionActual = odometria.LatestMessage.Pose.Pose.Position;
-        disp(posicionActual);
+        %disp(posicionActual);
         % Mediante la formula del modulo de un vector, podemos ver cuanta distancia hemos recorrido desde el punto de inicio
         distanciaRecorrida = sqrt((posicionInicial(1) - posicionActual.X)^2 + (posicionInicial(2) - posicionActual.Y)^2);
-        mensajeMovimiento.Linear.X = min(Kp * (distancia - distanciaRecorrida), 1);
+        mensajeMovimiento.Linear.X = min(Kp * (distancia - distanciaRecorrida), 1)
         send(publisher, mensajeMovimiento);
-        disp(distanciaRecorrida);
+        %disp(distanciaRecorrida);
     end
     disp("Fin avanzar");
     mensajeMovimiento.Linear.X = 0.0;
@@ -454,14 +379,14 @@ function girar(angulo,odometria,publisher)
     activo = true;
     iteracion = 0;
     sentidoHorario = false;
-    Kp = 1.8;
+    Kp = 10;
 
     while (activo)
         posicionActual = odometria.LatestMessage.Pose.Pose.Orientation;
         posicionAngular = [posicionActual.W, posicionActual.X, posicionActual.Y, posicionActual.Z];
         yaw = quat2angle(posicionAngular, 'ZYX');
         yaw = round(yaw, 4); % Acotamos a 4 decimales el resultado
-        disp(['Yaw (radianes): ', num2str(yaw)]);
+        %disp(['Yaw (radianes): ', num2str(yaw)]);
         
         if(iteracion == 0)
             % Convertir el ángulo a radianes del robot
@@ -476,7 +401,7 @@ function girar(angulo,odometria,publisher)
         % Ajustar el error para que esté en el intervalo [-pi, pi]
         error = wrapToPi(error);
         
-        controlGiro = min(Kp * abs(error), 1); % Acotamos la velocidad máxima de giro a 1
+        controlGiro = min(Kp * abs(error), 1) % Acotamos la velocidad máxima de giro a 1
         mensajeMovimiento.Angular.Z = controlGiro;
         mensajeMovimiento.Linear.X = 0;
         
@@ -556,5 +481,4 @@ function pose = getGlobalCoords(odometria)
 
 pos=odometria.LatestMessage.Pose.Pose.Position;
 pose=[pos.X,pos.Y];
-end
-    
+end    

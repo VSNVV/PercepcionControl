@@ -1,5 +1,5 @@
 %% Conexion a ros
-
+clear;
 rosshutdown;
 setenv('ROS_MASTER_URI','http://192.168.241.129:11311') % IP de la MV
 setenv('ROS_IP','192.168.1.129') % IP de nuestro ordenador
@@ -31,21 +31,10 @@ shortestPath=[];
 nodeActual=createNode(idList);
 nodeList{end+1}=nodeActual;
 idList=updateIdList(idList,nodeActual.id,0,0);
-explorado=false
+explorado=false;
 nodeToVisit=[];
 optimizedPath=[];
 
-if(explorado)
-    [xDes,yDes]=searchEnd(idList);
-    
-    shortestPath=dijkstra(nodeActual.id,nodeList,resetIdList(idList),xDes,yDes);
-    
-    optimizedPath=optimizePath(idList,shortestPath);
-    
-    [pose(1:2),pose(3),nodeActual]=travelPath(idList,optimizedPath,pose(1),pose(2),nodeList,odometria,publisher,globalPose);
-    explorado=false;
-   
-end
 while(~explorado)
     idList=setVisited(idList,nodeActual.id,1);
     
@@ -75,11 +64,6 @@ end
 
 rosshutdown;
 
-function [xFin,yFin]= searchEnd(idList)
-    idx=find(idList(:,5)==1);
-    xFin=idList(idx,2);
-    yFin=idList(idx,3);
-end
 
 function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
     idList=setVisited(idList,nodeId,1);
@@ -119,27 +103,6 @@ function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
     shortestPath = [nodeId, path];
 end
 
-% function [localCoords,yaw,node]= travelPath(idList,shortestPath,x,y,nodeId,nodeList,odometria,publisher,globalPose)
-% localCoords=[x,y];
-% 
-% node=nodeList{idxFromId(nodeList,nodeId)};
-%     for i=1:length(shortestPath)
-%         adjacentNodes = {node.down, node.right, node.up, node.left};
-%         for j=1:size(adjacentNodes,2)
-%             if ~isempty(adjacentNodes{j})
-%                 if adjacentNodes{j}==shortestPath(i)
-%                    node=nodeList{idxFromId(nodeList,adjacentNodes{j})};
-%                 end
-%             end
-%         end
-%         [xDest,yDest]=searchId(idList,shortestPath(i));    
-%         destinyCoords=[xDest,yDest];
-%         yaw=mover(localCoords,destinyCoords,odometria,publisher,globalPose);
-%         localCoords=destinyCoords;
-% 
-%     end
-%    
-% end
 function [localCoords,yaw,node]= travelPath(idList,shortestPath,x,y,nodeList,odometria,publisher,globalPose)
 localCoords=[x,y];
 yaw=[];
@@ -155,6 +118,7 @@ node=nodeList{idxFromId(nodeList,shortestPath(1))};
     end
   
 end
+
 function optPath= optimizePath(idList,path)
 
     anguloAnterior=NaN;
@@ -172,7 +136,7 @@ function optPath= optimizePath(idList,path)
         anguloAct= calcularOrientacion(coordIni,coordSig);
         if ~isnan(anguloAnterior)
             if ~(anguloAnterior==anguloAct)
-                optPath(end+1)=path(i-114);
+                optPath(end+1)=path(i-1);
             
             end
         end
@@ -182,36 +146,7 @@ function optPath= optimizePath(idList,path)
 
     optPath(end+1)=path(end);
     end
-% function optimizedPath = optimizePath(idList, path)
-%     % Inicializar el array optimizado con el primer nodo del camino
-%     optimizedPath=[];
-%     
-%     if length(path) > 2
-%         % Recorrer el camino desde el segundo hasta el penúltimo nodo
-%         for i = 3:length(path)-1
-%             % Obtener las coordenadas del nodo anterior, actual y siguiente
-%             [xPrev, yPrev] = searchId(idList, path(i-1));
-%             [xAct, yAct] = searchId(idList, path(i));
-%             [xNext, yNext] = searchId(idList, path(i+1));
-%             
-%             % Calcular la diferencia de coordenadas
-%             diffPrevX = xAct - xPrev;
-%             diffPrevY = yAct - yPrev;
-%             diffNextX = xNext - xAct;
-%             diffNextY = yNext - yAct;
-%             
-%             % Verificar si el nodo actual es redundante
-%             % Un nodo es redundante si ambos deltas previos y siguientes son 0 en un eje
-%             if ~(diffPrevX == 0 && diffNextX == 0) && ~(diffPrevY == 0 && diffNextY == 0)
-%                 optimizedPath(end+1) = path(i);
-%             end
-%         end
-%     end
-%     
-%     % Añadir el último nodo del camino
-%     optimizedPath(end+1) = path(end);
-% end
-    
+ 
 
 function nodeToVisit=nextNode(idList,nodeid,nodeList)
     node=nodeList{idxFromId(nodeList,nodeid)};
@@ -330,16 +265,6 @@ function nodeList= conectNode(actualNode,nodeWalls,nodeList)
             otherwise
                 error('Dirección no válida');
           end
-        end
-    end
-end
-
-function caso =isFinish(node)
-    nodeList=[node.down,node.right,node.up,node.left];
-    caso=false;
-    for i=1:length(nodeList)
-        if isempty(nodeList(i))
-            caso=true;
         end
     end
 end
