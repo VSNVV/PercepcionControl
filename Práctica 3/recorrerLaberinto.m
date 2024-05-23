@@ -18,18 +18,20 @@ pause(1);
 while (strcmp(odometria.LatestMessage.ChildFrameId,'robot0')~=1)
  odom.LatestMessage
 end
-
+tic;
 pose=[0,0,0];%% X,Y,ori
 nodeActual=nodeList{idxFromId(nodeList,0)};
 
 [xDes,yDes]=searchEnd(idList);
 
-shortestPath=dijkstra(nodeActual.id,nodeList,resetIdList(idList),xDes,yDes);
+shortestPath=busquedaProfundidad(nodeActual.id,nodeList,resetIdList(idList),xDes,yDes);
 
 optimizedPath=optimizePath(idList,shortestPath);
 
 [pose(1:2),pose(3),nodeActual]=travelPath(idList,optimizedPath,pose(1),pose(2),nodeList,odometria,publisher,globalPose);
 
+a=toc;
+disp(a);
 rosshutdown;
 
 function [xFin,yFin]= searchEnd(idList)
@@ -38,7 +40,7 @@ function [xFin,yFin]= searchEnd(idList)
     yFin=idList(idx,3);
 end
 
-function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
+function shortestPath = busquedaProfundidad(nodeId,nodeList, idList, xDes, yDes)
     idList=setVisited(idList,nodeId,1);
     node=nodeList{idxFromId(nodeList,nodeId)};
     [x, y] = searchId(idList, nodeId);
@@ -50,7 +52,7 @@ function shortestPath = dijkstra(nodeId,nodeList, idList, xDes, yDes)
             adjNodeId = adjacentNodes{i};
             if ~isVisited(idList, adjNodeId) && ~(x == xDes && y == yDes)
                 idList=setVisited(idList,adjNodeId,1);
-                shortestPathList{i} = dijkstra(adjNodeId,nodeList, idList, xDes, yDes);  % Recursive call
+                shortestPathList{i} = busquedaProfundidad(adjNodeId,nodeList, idList, xDes, yDes);  % Recursive call
             end
         end
     end
@@ -234,7 +236,7 @@ function girar(angulo,odometria,publisher)
     activo = true;
     iteracion = 0;
     sentidoHorario = false;
-    Kp = 10;
+    Kp = 7;
 
     while (activo)
         posicionActual = odometria.LatestMessage.Pose.Pose.Orientation;
