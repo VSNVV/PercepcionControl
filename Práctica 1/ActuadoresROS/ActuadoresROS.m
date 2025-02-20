@@ -30,6 +30,8 @@ function avanzar(distancia)
         odometria.LatestMessage
     end
 
+    r = robotics.Rate(10);
+
     distanciaRecorrida = 0;
     posicionInicial = odometria.LatestMessage.Pose.Pose.Position;
     send(publisher, mensajeMovimiento);
